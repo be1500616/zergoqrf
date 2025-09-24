@@ -2,7 +2,8 @@
 .PHONY: backend frontend docker-up docker-down test
 
 backend:
-	cd apps/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	lsof -t -i :8000 | xargs kill -9 || true
+	cd apps/backend && source .venv/bin/activate && PYTHONPATH=../../ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 frontend:
 	cd apps/frontend && flutter run -d chrome

@@ -1,0 +1,154 @@
+# General
+.DS_Store
+.env
+.env.*
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.envrc
+
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.melos_tool/
+
+# VS Code
+.vscode/
+.history/
+
+# Node / CI
+node_modules/
+
+# Coverage
+coverage/
+nyc_output/
+htmlcov/
+
+# Docker
+*.pid
+
+# =============================
+# Additional: OS & Editors
+# =============================
+Thumbs.db
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# =============================
+# Flutter multi-platform specifics
+# =============================
+# Catch nested build directories (in packages/apps)
+**/build/
+# Generated registrants
+**/generated_plugin_registrant.dart
+**/gen_dart_plugin_registrant.stamp
+**/gen_localizations.stamp
+# Flutter asset output (when surfaced)
+**/flutter_assets/
+
+# =============================
+# Android (Gradle)
+# =============================
+.gradle/
+android/.gradle/
+android/captures/
+android/local.properties
+android/app/*.keystore
+android/app/*.jks
+android/app/google-services.json
+android/app/src/**/GeneratedPluginRegistrant*.java
+
+# =============================
+# iOS / CocoaPods / Xcode
+# =============================
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Runner/GeneratedPluginRegistrant.*
+ios/Pods/
+ios/.symlinks/
+ios/DerivedData/
+ios/Runner.xcworkspace/
+*.xcuserstate
+*.xcuserdatad/
+# Firebase (if used)
+ios/Runner/GoogleService-Info.plist
+
+# =============================
+# macOS (Flutter Desktop)
+# =============================
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Pods/
+macos/.symlinks/
+macos/DerivedData/
+macos/Runner.xcworkspace/
+
+# =============================
+# Windows / Linux (Flutter Desktop)
+# =============================
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+
+# =============================
+# Python backend
+# =============================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.pytype/
+.pyre/
+.tox/
+.coverage
+.coverage.*
+dist/
+*.sqlite3
+*.db
+
+# =============================
+# Supabase infra
+# =============================
+infra/supabase/.temp/
+infra/supabase/.branches/
+infra/supabase/.env
+infra/supabase/.env.*
+
+# =============================
+# Logs / Temp dirs
+# =============================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.tmp/
+tmp/
+temp/
+
+# Flutter project metadata (not needed in VCS)
+.metadata
+
+# =============================
+# Misc
+# =============================
+*.swp
+.svn/
+CVS/
+*.orig
+*.rej
+.augment/
+.bmad-core/
+.claude/
+.cursor/
+.roomodes
+
+docs/
+web-bundles/

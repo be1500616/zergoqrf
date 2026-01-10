@@ -42,6 +42,11 @@ build/
 .flutter-plugins-dependencies
 .melos_tool/
 .fvm/
+# Package configuration (generated)
+**/.dart_tool/package_config.json
+**/.dart_tool/package_config_subset
+**/.dart_tool/dartpad/
+**/.dart_tool/flutter_build/
 
 # VS Code
 .vscode/
@@ -74,10 +79,16 @@ Thumbs.db
 **/build/
 # Generated registrants
 **/generated_plugin_registrant.dart
+**/GeneratedPluginRegistrant.*
 **/gen_dart_plugin_registrant.stamp
 **/gen_localizations.stamp
 # Flutter asset output (when surfaced)
 **/flutter_assets/
+# Flutter cache and build artifacts
+**/cache.dill.track.dill
+**/native_assets/
+**/unit_test_assets/
+**/test_cache/
 
 # =============================
 # Android (Gradle)
@@ -120,7 +131,11 @@ macos/Runner.xcworkspace/
 # Windows / Linux (Flutter Desktop)
 # =============================
 windows/flutter/ephemeral/
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugins.cmake
 linux/flutter/ephemeral/
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugins.cmake
 
 # =============================
 # Supabase infra
@@ -158,3 +173,79 @@ CVS/
 .roomodes
 
 web-bundles/
+
+# =============================
+# Additional Python Patterns
+# =============================
+*.pyc
+*.pyo
+*.pyd
+*.so
+.Python
+**/*.py[cod]
+
+# =============================
+# Additional Flutter Patterns
+# =============================
+# Ensure all build artifacts are ignored
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/cache.dill.track.dill
+
+# =============================
+# Generated Files (NEVER commit)
+# =============================
+**/GeneratedPluginRegistrant.*
+**/generated_plugin_registrant.*
+**/.dart_tool/package_config.json
+**/.dart_tool/package_config_subset
+
+# =============================
+# Temporary Documentation
+# =============================
+# Status and report files (keep in docs/reports if needed)
+*_REPORT.md
+*_STATUS.md
+*_SUMMARY.md
+*_PLAN.md
+ROUTER_COMPARISON.md
+INTEGRATION_*.md
+AUTH_INTEGRATION_PLAN.md
+FINAL_IMPLEMENTATION_REPORT.md
+IMPLEMENTATION_STATUS.md
+REVISED_IMPLEMENTATION_PLAN.md
+TASK_COMPLETION_SUMMARY.md
+
+# =============================
+# Test Artifacts
+# =============================
+**/.pytest_cache/
+**/htmlcov/
+**/.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+**/.tox/
+
+# =============================
+# IDE Specific (Extended)
+# =============================
+.vscode/settings.json
+.vscode/launch.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+
+# =============================
+# OS Specific
+# =============================
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini

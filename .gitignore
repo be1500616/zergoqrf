@@ -259,6 +259,12 @@ Desktop.ini
 .github/workflows/drawbridge-workflow.mdc
 .github/workflows/CLAUDE.md
 GITBUTLER_*
+apps/backend/CLAUDE.md
+apps/frontend/CLAUDE.md
+apps/backend/TEST_RESULTS.md
+apps/backend/fix_tests.py
+apps/backend/organize_tests.py
+infra/supabase/supabase/
 
 # =============================
 # Local Analysis / Test Outputs

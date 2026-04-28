@@ -10,6 +10,9 @@ Prereqs: Python 3.12+, `uv` (optional), `.env` at repo root with Supabase creds.
 # From repo root one-time
 cp .env.example .env  # fill values
 
+# Choose runtime profile (dev | test | prod | local)
+export APP_PROFILE=dev
+
 # Install deps
 cd apps/backend
 pip install -U pip
@@ -39,3 +42,11 @@ pytest -q
 - `SUPABASE_SERVICE_ROLE_KEY` (server)
 - `SUPABASE_JWT_SECRET` (verify tokens)
 - `ALLOWED_ORIGINS` comma-separated list
+
+Profile support:
+
+- `APP_PROFILE` controls active profile (`dev`, `test`, `prod`, `local`)
+- You can use shared keys (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, etc.) or profile-specific overrides:
+  - `SUPABASE_DEV_URL`, `SUPABASE_DEV_ANON_KEY`, `SUPABASE_DEV_SERVICE_ROLE_KEY`, `SUPABASE_DEV_JWT_SECRET`
+  - `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY`, `SUPABASE_TEST_SERVICE_ROLE_KEY`, `SUPABASE_TEST_JWT_SECRET`
+  - `SUPABASE_PROD_URL`, `SUPABASE_PROD_ANON_KEY`, `SUPABASE_PROD_SERVICE_ROLE_KEY`, `SUPABASE_PROD_JWT_SECRET`

@@ -1,0 +1,263 @@
+Analyzing frontend...                                           
+
+warning • The value of the field '_productionBaseUrl' isn't used • lib/core/config/api_config.dart:9:23 • unused_field
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/theme/app_theme.dart:40:54 • deprecated_member_use
+   info • 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre • lib/core/theme/app_theme.dart:124:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/theme/app_theme.dart:124:60 • deprecated_member_use
+   info • 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre • lib/core/theme/app_theme.dart:188:51 • deprecated_member_use
+   info • 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre • lib/core/theme/app_theme.dart:190:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/theme/app_theme.dart:190:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/theme/app_theme.dart:252:53 • deprecated_member_use
+   info • 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre • lib/core/theme/app_theme.dart:336:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/theme/app_theme.dart:336:59 • deprecated_member_use
+   info • 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre • lib/core/theme/app_theme.dart:400:50 • deprecated_member_use
+   info • 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre • lib/core/theme/app_theme.dart:402:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/theme/app_theme.dart:402:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/theme/widgets/theme_toggle_button.dart:36:50 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/core/theme/widgets/theme_toggle_button.dart:69:46 • deprecated_member_use
+   info • 'userDeleted' is deprecated and shouldn't be used. Was never in use and might be removed in the future • lib/features/auth/application/supabase_auth_controller.dart:202:37 • deprecated_member_use
+warning • The operand can't be 'null', so the condition is always 'true' • lib/features/auth/application/supabase_auth_controller.dart:229:28 • unnecessary_null_comparison
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:189:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:221:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:232:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:331:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:338:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:387:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:394:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:453:59 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:481:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:577:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:584:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:615:50 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:670:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:688:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:691:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:735:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:741:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:776:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:782:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:864:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/auth_screen.dart:1090:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:96:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:114:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:119:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:178:29 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:181:31 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:203:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:220:29 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:240:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:264:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:277:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/food_background_visual.dart:282:37 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/presentation/widgets/social_login_buttons.dart:65:52 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/features/diner/application/controllers/cart_controller.dart:65:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/diner/application/controllers/cart_controller.dart:111:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/diner/application/controllers/cart_controller.dart:163:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/diner/application/controllers/cart_controller.dart:202:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/diner/application/controllers/cart_controller.dart:230:7 • avoid_print
+warning • Unused import: '../../domain/entities/menu_item.dart' • lib/features/diner/application/services/cart_service.dart:11:8 • unused_import
+   info • Don't invoke 'print' in production code • lib/features/diner/application/services/cart_service.dart:83:9 • avoid_print
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/diner/presentation/screens/cart_screen.dart:262:41 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block • lib/features/menu/application/controllers/availability_controller.dart:204:7 • curly_braces_in_flow_control_structures
+   info • Dangling library doc comment • lib/features/menu/application/controllers/menu_preview_controller.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/menu/domain/repositories/menu_repository.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/menu/infrastructure/menu_repository_impl.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/menu/presentation/screens/menu_item_editor_screen.dart:1:1 • dangling_library_doc_comments
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/screens/menu_item_editor_screen.dart:126:73 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps • lib/features/menu/presentation/widgets/add_subcategory_dialog.dart:86:20 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/features/menu/presentation/widgets/edit_category_dialog.dart:125:20 • use_build_context_synchronously
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_availability_tab.dart:46:28 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_availability_tab.dart:154:36 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_availability_tab.dart:180:58 • deprecated_member_use
+warning • The value of the local variable 'hasCustomSchedule' isn't used • lib/features/menu/presentation/widgets/menu_item_availability_tab.dart:285:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_availability_tab.dart:316:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_availability_tab.dart:317:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_availability_tab.dart:322:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_availability_tab.dart:323:58 • deprecated_member_use
+   info • Dangling library doc comment • lib/features/menu/presentation/widgets/menu_item_basic_details_tab.dart:1:1 • dangling_library_doc_comments
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_basic_details_tab.dart:277:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_basic_details_tab.dart:424:62 • deprecated_member_use
+   info • 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre • lib/features/menu/presentation/widgets/menu_item_basic_details_tab.dart:457:66 • deprecated_member_use
+   info • Dangling library doc comment • lib/features/menu/presentation/widgets/menu_item_modifiers_tab.dart:1:1 • dangling_library_doc_comments
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_modifiers_tab.dart:47:66 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_modifiers_tab.dart:115:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_modifiers_tab.dart:206:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_modifiers_tab.dart:208:67 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_modifiers_tab.dart:361:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_modifiers_tab.dart:363:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_modifiers_tab.dart:607:76 • deprecated_member_use
+   info • Dangling library doc comment • lib/features/menu/presentation/widgets/menu_item_pricing_tab.dart:1:1 • dangling_library_doc_comments
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_pricing_tab.dart:47:66 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_item_pricing_tab.dart:129:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_items_tab.dart:29:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_items_tab.dart:352:36 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_items_tab.dart:526:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_items_tab.dart:528:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_preview_tab.dart:32:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_preview_tab.dart:108:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_preview_tab.dart:119:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_preview_tab.dart:152:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_preview_tab.dart:289:30 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_preview_tab.dart:330:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_preview_tab.dart:412:32 • deprecated_member_use
+   info • Dangling library doc comment • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:1:1 • dangling_library_doc_comments
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:81:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:88:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:139:79 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:149:75 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:155:81 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:172:77 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:267:80 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:513:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:515:41 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:637:9 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/features/menu/presentation/widgets/menu_publishing_tab.dart:665:20 • use_build_context_synchronously
+   info • Dangling library doc comment • lib/features/order_tracking/application/controllers/kitchen_order_controller.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/order_tracking/application/controllers/order_tracking_controller.dart:1:1 • dangling_library_doc_comments
+  error • Undefined class 'NotificationTrigger' • lib/features/order_tracking/application/controllers/order_tracking_controller.dart:305:5 • undefined_class
+  error • The name 'NotificationChannel' isn't a type, so it can't be used as a type argument • lib/features/order_tracking/application/controllers/order_tracking_controller.dart:306:10 • non_type_as_type_argument
+   info • Dangling library doc comment • lib/features/order_tracking/application/use_cases/fetch_order_tracking.dart:1:1 • dangling_library_doc_comments
+  error • The name 'OrderTimeline' isn't a type, so it can't be used as a type argument • lib/features/order_tracking/application/use_cases/fetch_order_tracking.dart:258:10 • non_type_as_type_argument
+  error • Undefined class 'OrderTimeline' • lib/features/order_tracking/application/use_cases/fetch_order_tracking.dart:288:26 • undefined_class
+  error • The name 'NotificationPreference' isn't a type, so it can't be used as a type argument • lib/features/order_tracking/application/use_cases/fetch_order_tracking.dart:345:10 • non_type_as_type_argument
+  error • Undefined class 'NotificationPreference' • lib/features/order_tracking/application/use_cases/fetch_order_tracking.dart:385:29 • undefined_class
+   info • Dangling library doc comment • lib/features/order_tracking/application/use_cases/subscribe_order_updates.dart:1:1 • dangling_library_doc_comments
+  error • Local variable '_scheduleReconnect' can't be referenced before it is declared • lib/features/order_tracking/application/use_cases/subscribe_order_updates.dart:414:13 • referenced_before_declaration
+  error • Local variable '_scheduleReconnect' can't be referenced before it is declared • lib/features/order_tracking/application/use_cases/subscribe_order_updates.dart:418:13 • referenced_before_declaration
+  error • Local variable '_scheduleReconnect' can't be referenced before it is declared • lib/features/order_tracking/application/use_cases/subscribe_order_updates.dart:428:9 • referenced_before_declaration
+   info • The local variable '_scheduleReconnect' starts with an underscore • lib/features/order_tracking/application/use_cases/subscribe_order_updates.dart:432:10 • no_leading_underscores_for_local_identifiers
+   info • Dangling library doc comment • lib/features/order_tracking/application/use_cases/update_order_status.dart:1:1 • dangling_library_doc_comments
+  error • Undefined class 'NotificationTrigger' • lib/features/order_tracking/application/use_cases/update_order_status.dart:192:5 • undefined_class
+  error • The name 'NotificationChannel' isn't a type, so it can't be used as a type argument • lib/features/order_tracking/application/use_cases/update_order_status.dart:193:10 • non_type_as_type_argument
+  error • Undefined class 'NotificationTrigger' • lib/features/order_tracking/application/use_cases/update_order_status.dart:356:5 • undefined_class
+  error • The name 'NotificationChannel' isn't a type, so it can't be used as a type argument • lib/features/order_tracking/application/use_cases/update_order_status.dart:357:10 • non_type_as_type_argument
+   info • Dangling library doc comment • lib/features/order_tracking/domain/entities/notification_preference.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/order_tracking/domain/entities/notification_types.dart:1:1 • dangling_library_doc_comments
+warning • Unused import: 'package:equatable/equatable.dart' • lib/features/order_tracking/domain/entities/notification_types.dart:2:8 • unused_import
+   info • Dangling library doc comment • lib/features/order_tracking/domain/entities/order_status_update.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/order_tracking/domain/entities/order_timeline.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/order_tracking/domain/entities/order_tracking.dart:1:1 • dangling_library_doc_comments
+warning • Unused import: 'notification_preference.dart' • lib/features/order_tracking/domain/entities/order_tracking.dart:9:8 • unused_import
+   info • Dangling library doc comment • lib/features/order_tracking/domain/repositories/order_tracking_repository.dart:1:1 • dangling_library_doc_comments
+  error • Undefined class 'NotificationTrigger' • lib/features/order_tracking/domain/repositories/order_tracking_repository.dart:138:5 • undefined_class
+  error • The name 'NotificationChannel' isn't a type, so it can't be used as a type argument • lib/features/order_tracking/domain/repositories/order_tracking_repository.dart:139:10 • non_type_as_type_argument
+   info • Library names are not necessary • lib/features/order_tracking/order_tracking.dart:22:9 • unnecessary_library_name
+   info • Dangling library doc comment • lib/features/order_tracking/presentation/screens/order_tracking_screen.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/order_tracking/presentation/widgets/order_status_indicator.dart:1:1 • dangling_library_doc_comments
+warning • Unused import: 'package:flutter_animate/flutter_animate.dart' • lib/features/order_tracking/presentation/widgets/order_status_indicator.dart:6:8 • unused_import
+   info • Dangling library doc comment • lib/features/order_tracking/presentation/widgets/order_timeline_widget.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/order_tracking/presentation/widgets/real_time_status_card.dart:1:1 • dangling_library_doc_comments
+  error • The named parameter 'gradient' isn't defined • lib/features/order_tracking/presentation/widgets/real_time_status_card.dart:120:13 • undefined_named_parameter
+warning • Unused import: '../../domain/entities/qr_entities.dart' • lib/features/qr/presentation/screens/qr_management_screen.dart:4:8 • unused_import
+warning • Unused import: '../widgets/qr_generation_dialog.dart' • lib/features/qr/presentation/screens/qr_management_screen.dart:5:8 • unused_import
+   info • Dangling library doc comment • lib/features/restaurants/application/application.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/application/controllers/business_details_controller.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/application/controllers/staff_dialog_controller.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/application/restaurant_binding.dart:1:1 • dangling_library_doc_comments
+   info • Don't invoke 'print' in production code • lib/features/restaurants/application/restaurant_controller.dart:88:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/restaurants/application/restaurant_controller.dart:178:7 • avoid_print
+   info • Dangling library doc comment • lib/features/restaurants/domain/domain.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/domain/restaurant_entity.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/domain/restaurant_repository.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/infrastructure/infrastructure.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/infrastructure/restaurant_repository_impl.dart:1:1 • dangling_library_doc_comments
+   info • Don't invoke 'print' in production code • lib/features/restaurants/infrastructure/restaurant_repository_impl.dart:226:7 • avoid_print
+   info • Dangling library doc comment • lib/features/restaurants/presentation/presentation.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/restaurant_dashboard_screen.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/restaurant_registration_screen.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/restaurant_settings_screen.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/staff_management_screen.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/branding_settings.dart:1:1 • dangling_library_doc_comments
+   info • 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion • lib/features/restaurants/presentation/widgets/branding_settings.dart:56:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/restaurants/presentation/widgets/branding_settings.dart:316:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/restaurants/presentation/widgets/branding_settings.dart:340:57 • deprecated_member_use
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/business_details_step.dart:1:1 • dangling_library_doc_comments
+   info • Unnecessary use of 'toList' in a spread • lib/features/restaurants/presentation/widgets/business_details_step.dart:151:14 • unnecessary_to_list_in_spreads
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/business_hours_settings.dart:1:1 • dangling_library_doc_comments
+   info • Unnecessary use of 'toList' in a spread • lib/features/restaurants/presentation/widgets/business_hours_settings.dart:64:18 • unnecessary_to_list_in_spreads
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/dashboard_overview_card.dart:1:1 • dangling_library_doc_comments
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/restaurants/presentation/widgets/dashboard_overview_card.dart:79:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/restaurants/presentation/widgets/dashboard_overview_card.dart:81:41 • deprecated_member_use
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/financial_settings.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/operational_settings.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/owner_info_step.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/quick_actions_card.dart:1:1 • dangling_library_doc_comments
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/restaurants/presentation/widgets/quick_actions_card.dart:100:24 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/restaurants/presentation/widgets/quick_actions_card.dart:102:43 • deprecated_member_use
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/registration_step_indicator.dart:1:1 • dangling_library_doc_comments
+warning • The value of the local variable 'isCompleted' isn't used • lib/features/restaurants/presentation/widgets/registration_step_indicator.dart:22:15 • unused_local_variable
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/restaurant_info_card.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/restaurant_info_step.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/review_step.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/restaurants/presentation/widgets/settings_section.dart:1:1 • dangling_library_doc_comments
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/restaurants/presentation/widgets/staff_card.dart:106:50 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/restaurants/presentation/widgets/staff_card.dart:109:52 • deprecated_member_use
+   info • Dangling library doc comment • lib/features/restaurants/restaurants.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/tables/application/controllers/table_controllers.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/tables/application/services/table_services.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/tables/domain/entities/table_entities.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/features/tables/infrastructure/repositories/table_repositories_impl.dart:1:1 • dangling_library_doc_comments
+warning • Unused import: 'package:get/get.dart' • lib/features/tables/infrastructure/repositories/table_repositories_impl.dart:6:8 • unused_import
+   info • Unnecessary use of 'toList' in a spread • lib/features/tables/presentation/pages/table_management_screen.dart:52:26 • unnecessary_to_list_in_spreads
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/tables/presentation/widgets/table_status_chip.dart:29:40 • deprecated_member_use
+   info • Library names are not necessary • lib/features/tables/tables.dart:10:9 • unnecessary_library_name
+   info • Dangling library doc comment • lib/shared/responsive/index.dart:1:1 • dangling_library_doc_comments
+   info • The imported package 'flutter_test' isn't a dependency of the importing package • lib/shared/responsive/test_utils.dart:2:8 • depend_on_referenced_packages
+   info • Dangling library doc comment • lib/shared/responsive/widgets/index.dart:1:1 • dangling_library_doc_comments
+   info • The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/shared/responsive/widgets/responsive_layout.dart:2:8 • unnecessary_import
+warning • Unused import: 'package:flutter_animate/flutter_animate.dart' • lib/shared/widgets/enhanced_button.dart:2:8 • unused_import
+warning • Unused import: '../../core/theme/app_animations.dart' • lib/shared/widgets/enhanced_button.dart:5:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_button.dart:190:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_button.dart:258:30 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_button.dart:309:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_button.dart:315:34 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_button.dart:319:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_button.dart:323:34 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_button.dart:327:34 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_button.dart:335:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_button.dart:343:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_card.dart:170:68 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_card.dart:184:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_card.dart:185:52 • deprecated_member_use
+warning • Unused import: 'package:flutter_animate/flutter_animate.dart' • lib/shared/widgets/enhanced_fab.dart:2:8 • unused_import
+warning • Unused import: '../../core/theme/app_animations.dart' • lib/shared/widgets/enhanced_fab.dart:5:8 • unused_import
+warning • The value of the field '_isPressed' isn't used • lib/shared/widgets/enhanced_fab.dart:85:8 • unused_field
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_fab.dart:212:28 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_fab.dart:247:24 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_fab.dart:254:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_fab.dart:298:24 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_fab.dart:305:39 • deprecated_member_use
+warning • Unused import: 'package:shimmer/shimmer.dart' • lib/shared/widgets/enhanced_loading.dart:3:8 • unused_import
+warning • Unused import: 'package:lottie/lottie.dart' • lib/shared/widgets/enhanced_loading.dart:4:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_loading.dart:97:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_loading.dart:209:28 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_loading.dart:321:59 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_loading.dart:419:44 • deprecated_member_use
+warning • Unused import: 'package:flutter_animate/flutter_animate.dart' • lib/shared/widgets/enhanced_search_bar.dart:2:8 • unused_import
+warning • Unused import: '../../core/theme/app_animations.dart' • lib/shared/widgets/enhanced_search_bar.dart:5:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_search_bar.dart:142:40 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_search_bar.dart:163:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_search_bar.dart:179:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_search_bar.dart:187:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_search_bar.dart:198:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_search_bar.dart:336:61 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/enhanced_search_bar.dart:349:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/loading_overlay.dart:76:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/shared/widgets/loading_overlay.dart:96:52 • deprecated_member_use
+  error • Target of URI doesn't exist: 'enhanced_menu_test.mocks.dart' • test/features/diner/enhanced_menu_test.dart:18:8 • uri_does_not_exist
+  error • Undefined class 'MockFetchMenuUseCase' • test/features/diner/enhanced_menu_test.dart:23:10 • undefined_class
+  error • The name 'MenuController' is defined in the libraries 'package:flutter/src/material/menu_anchor.dart (via package:flutter/material.dart)' and 'package:zergo_frontend/features/diner/application/controllers/menu_controller.dart' • test/features/diner/enhanced_menu_test.dart:24:10 • ambiguous_import
+  error • The function 'MockFetchMenuUseCase' isn't defined • test/features/diner/enhanced_menu_test.dart:28:30 • undefined_function
+  error • 'MenuController' isn't a function • test/features/diner/enhanced_menu_test.dart:29:24 • invocation_of_non_function
+  error • The name 'MenuController' is defined in the libraries 'package:flutter/src/material/menu_anchor.dart (via package:flutter/material.dart)' and 'package:zergo_frontend/features/diner/application/controllers/menu_controller.dart' • test/features/diner/enhanced_menu_test.dart:29:24 • ambiguous_import
+  error • 1 positional argument expected by 'CartController.new', but 0 found • test/features/diner/enhanced_menu_test.dart:30:39 • not_enough_positional_arguments
+  error • The name 'MenuController' is defined in the libraries 'package:flutter/src/material/menu_anchor.dart (via package:flutter/material.dart)' and 'package:zergo_frontend/features/diner/application/controllers/menu_controller.dart' • test/features/diner/enhanced_menu_test.dart:33:15 • ambiguous_import
+  error • The function 'MenuSearchResult' isn't defined • test/features/diner/enhanced_menu_test.dart:220:34 • undefined_function
+  error • The function 'MenuSearchResult' isn't defined • test/features/diner/enhanced_menu_test.dart:260:34 • undefined_function
+warning • The value of the local variable 'homeScreen' isn't used • test/golden/golden_tests.dart:22:15 • unused_local_variable
+  error • Undefined class 'AuthController' • test/unit/auth_controller_test.dart:24:10 • undefined_class
+  error • The function 'AuthController' isn't defined • test/unit/auth_controller_test.dart:57:24 • undefined_function
+  error • The named parameter 'supabase' isn't defined • test/widget/auth_screen_test.dart:13:11 • undefined_named_parameter
+  error • The named parameter 'authRepository' isn't defined • test/widget/auth_screen_test.dart:14:11 • undefined_named_parameter
+  error • 'TestAuthController.signInWithEmail' ('Future<void> Function()') isn't a valid override of 'SupabaseAuthController.signInWithEmail' ('Future<bool> Function([String?, String?])') • test/widget/auth_screen_test.dart:22:16 • invalid_override
+

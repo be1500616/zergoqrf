@@ -13,12 +13,12 @@ load_dotenv(f".env.{ENV}", override=True)  # Load env-specific file, overriding 
 
 
 class Settings(BaseSettings):
-    env: str
-    api_host: str
-    api_port: int
-    log_level: str
+    env: str = "development"
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
+    log_level: str = "INFO"
     # Comma-separated list in env: ALLOWED_ORIGINS
-    allowed_origins_csv: str
+    allowed_origins_csv: str = ""
 
     supabase_url: str
     supabase_anon_key: str
@@ -30,9 +30,7 @@ class Settings(BaseSettings):
     @property
     def allowed_origins(self) -> List[str]:
         return [
-            o.strip()
-            for o in (self.allowed_origins_csv or "").split(",")
-            if o.strip()
+            o.strip() for o in (self.allowed_origins_csv or "").split(",") if o.strip()
         ]
 
 

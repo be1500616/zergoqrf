@@ -26,42 +26,42 @@ from ..auth_dtos import (
     UserDTO,
     user_entity_to_dto,
 )
-from ....core.logging_config import log_auth_event
+from app.core.logging_config import log_auth_event
 
 logger = logging.getLogger(__name__)
 
 
 class EmailSignInUseCase:
     """Use case for email and password sign-in.
-    
+
     This use case handles the business logic for authenticating users
     with email and password credentials.
     """
-    
+
     def __init__(self, auth_repository: IAuthRepository):
         """Initialize the use case.
-        
+
         Args:
             auth_repository: Repository for authentication operations
         """
         self._auth_repository = auth_repository
-    
+
     async def execute(self, request: EmailSignInRequestDTO) -> AuthResponseDTO:
         """Execute email sign-in use case.
-        
+
         Args:
             request: Sign-in request data
-            
+
         Returns:
             Authentication response with tokens and user data
-            
+
         Raises:
             InvalidCredentialsError: If credentials are invalid
             AuthenticationError: If authentication fails
         """
         try:
             logger.debug(f"Email sign in attempt for: {request.email}")
-            
+
             # Validate email format
             try:
                 email = Email(request.email)
@@ -74,7 +74,7 @@ class EmailSignInUseCase:
                     level="warning",
                 )
                 raise InvalidEmailFormatError(str(e))
-            
+
             # Validate password strength (basic check)
             if len(request.password) < 8:
                 log_auth_event(
@@ -85,12 +85,12 @@ class EmailSignInUseCase:
                     level="warning",
                 )
                 raise WeakPasswordError("Password must be at least 8 characters long")
-            
+
             # Attempt authentication
             auth_result = await self._auth_repository.sign_in_with_email(
                 email, request.password
             )
-            
+
             if not auth_result.is_successful():
                 log_auth_event(
                     logger,
@@ -102,10 +102,10 @@ class EmailSignInUseCase:
                 raise InvalidCredentialsError(
                     auth_result.error_message or "Invalid email or password"
                 )
-            
+
             # Convert domain entities to DTOs
             user_dto = user_entity_to_dto(auth_result.user)
-            
+
             # Log successful authentication
             log_auth_event(
                 logger,
@@ -114,16 +114,18 @@ class EmailSignInUseCase:
                 email=auth_result.user.email.value if auth_result.user.email else None,
                 details=f"Role: {auth_result.user.role}",
             )
-            
+
             # Build response
             return AuthResponseDTO(
                 access_token=auth_result.session.access_token.value,
-                refresh_token=auth_result.session.refresh_token.value if auth_result.session.refresh_token else "",
+                refresh_token=auth_result.session.refresh_token.value
+                if auth_result.session.refresh_token
+                else "",
                 token_type="bearer",
                 expires_in=3600,  # Default to 1 hour
                 user=user_dto,
             )
-            
+
         except (InvalidCredentialsError, InvalidEmailFormatError, WeakPasswordError):
             raise
         except Exception as e:
@@ -132,7 +134,7 @@ class EmailSignInUseCase:
                 "signin_error",
                 email=request.email,
                 details=str(e),
-                level="error"
+                level="error",
             )
             logger.error(f"Email sign in error: {str(e)}")
             raise AuthenticationError("Authentication failed")
@@ -140,28 +142,28 @@ class EmailSignInUseCase:
 
 class EmailSignUpUseCase:
     """Use case for email and password sign-up.
-    
+
     This use case handles the business logic for creating new user
     accounts with email and password credentials.
     """
-    
+
     def __init__(self, auth_repository: IAuthRepository):
         """Initialize the use case.
-        
+
         Args:
             auth_repository: Repository for authentication operations
         """
         self._auth_repository = auth_repository
-    
+
     async def execute(self, request: EmailSignUpRequestDTO) -> AuthResponseDTO:
         """Execute email sign-up use case.
-        
+
         Args:
             request: Sign-up request data
-            
+
         Returns:
             Authentication response with tokens and user data
-            
+
         Raises:
             UserAlreadyExistsError: If user already exists
             InvalidEmailFormatError: If email format is invalid
@@ -170,7 +172,7 @@ class EmailSignUpUseCase:
         """
         try:
             logger.debug(f"Email sign up attempt for: {request.email}")
-            
+
             # Validate email format
             try:
                 email = Email(request.email)
@@ -183,7 +185,7 @@ class EmailSignUpUseCase:
                     level="warning",
                 )
                 raise InvalidEmailFormatError(str(e))
-            
+
             # Validate password strength
             if len(request.password) < 8:
                 log_auth_event(
@@ -194,7 +196,7 @@ class EmailSignUpUseCase:
                     level="warning",
                 )
                 raise WeakPasswordError("Password must be at least 8 characters long")
-            
+
             # Check if user already exists
             existing_user = await self._auth_repository.get_user_by_email(email)
             if existing_user:
@@ -206,7 +208,7 @@ class EmailSignUpUseCase:
                     level="warning",
                 )
                 raise UserAlreadyExistsError("User with this email already exists")
-            
+
             # Attempt account creation
             auth_result = await self._auth_repository.sign_up_with_email(
                 email=email,
@@ -215,7 +217,7 @@ class EmailSignUpUseCase:
                 role=request.role,
                 restaurant_id=request.restaurant_id,
             )
-            
+
             if not auth_result.is_successful():
                 log_auth_event(
                     logger,
@@ -227,10 +229,10 @@ class EmailSignUpUseCase:
                 raise AuthenticationError(
                     auth_result.error_message or "Failed to create user account"
                 )
-            
+
             # Convert domain entities to DTOs
             user_dto = user_entity_to_dto(auth_result.user)
-            
+
             # Log successful account creation
             log_auth_event(
                 logger,
@@ -239,7 +241,7 @@ class EmailSignUpUseCase:
                 email=auth_result.user.email.value if auth_result.user.email else None,
                 details=f"Role: {auth_result.user.role}",
             )
-            
+
             # Handle case where email confirmation is required (no session)
             if not auth_result.session:
                 return AuthResponseDTO(
@@ -249,7 +251,9 @@ class EmailSignUpUseCase:
                     expires_in=0,
                     user=UserDTO(
                         id=auth_result.user.user_id,
-                        email=auth_result.user.email.value if auth_result.user.email else None,
+                        email=auth_result.user.email.value
+                        if auth_result.user.email
+                        else None,
                         name=request.name,
                         role=request.role,
                         restaurant_id=request.restaurant_id,
@@ -257,16 +261,18 @@ class EmailSignUpUseCase:
                         is_active=False,  # Pending email confirmation
                     ),
                 )
-            
+
             # Build response with session
             return AuthResponseDTO(
                 access_token=auth_result.session.access_token.value,
-                refresh_token=auth_result.session.refresh_token.value if auth_result.session.refresh_token else "",
+                refresh_token=auth_result.session.refresh_token.value
+                if auth_result.session.refresh_token
+                else "",
                 token_type="bearer",
                 expires_in=3600,  # Default to 1 hour
                 user=user_dto,
             )
-            
+
         except (UserAlreadyExistsError, InvalidEmailFormatError, WeakPasswordError):
             raise
         except Exception as e:
@@ -275,7 +281,7 @@ class EmailSignUpUseCase:
                 "signup_error",
                 email=request.email,
                 details=str(e),
-                level="error"
+                level="error",
             )
             logger.error(f"Email sign up error: {str(e)}")
             raise AuthenticationError("Account creation failed")
@@ -283,27 +289,27 @@ class EmailSignUpUseCase:
 
 class EmailVerificationUseCase:
     """Use case for email verification.
-    
+
     This use case handles email verification for newly registered users.
     """
-    
+
     def __init__(self, auth_repository: IAuthRepository):
         """Initialize the use case.
-        
+
         Args:
             auth_repository: Repository for authentication operations
         """
         self._auth_repository = auth_repository
-    
+
     async def execute(self, verification_token: str) -> bool:
         """Execute email verification use case.
-        
+
         Args:
             verification_token: Email verification token
-            
+
         Returns:
             True if verification was successful
-            
+
         Raises:
             AuthenticationError: If verification fails
         """
@@ -311,12 +317,14 @@ class EmailVerificationUseCase:
             # This would typically involve validating the token
             # and activating the user account
             # Implementation depends on Supabase's email verification flow
-            
-            logger.info(f"Email verification attempted with token: {verification_token[:10]}...")
-            
+
+            logger.info(
+                f"Email verification attempted with token: {verification_token[:10]}..."
+            )
+
             # For now, return True as Supabase handles this automatically
             return True
-            
+
         except Exception as e:
             logger.error(f"Email verification error: {str(e)}")
             raise AuthenticationError("Email verification failed")

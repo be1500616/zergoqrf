@@ -1,14 +1,12 @@
 from fastapi import Depends, Header, HTTPException
 from supabase import Client
 
-from apps.backend.app.common.supabase_client import get_supabase
+from app.common.supabase_client import get_supabase
 
 
 def get_current_tenant(x_tenant_id: str | None = Header(default=None)) -> str:
     if not x_tenant_id:
-        raise HTTPException(
-            status_code=400, detail="X-Tenant-Id header required"
-        )
+        raise HTTPException(status_code=400, detail="X-Tenant-Id header required")
     return x_tenant_id
 
 

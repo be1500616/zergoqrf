@@ -26,8 +26,14 @@ class EmailSignUpRequestDTO:
     email: str
     password: str
     name: Optional[str] = None
+    phone: Optional[str] = None
     role: str = "customer"
     restaurant_id: Optional[str] = None
+
+
+# Aliases for backward compatibility and Clean Architecture consistency
+SignInRequestDTO = EmailSignInRequestDTO
+SignUpRequestDTO = EmailSignUpRequestDTO
 
 
 @dataclass
@@ -92,6 +98,9 @@ class AuthResponseDTO:
     token_type: str = "bearer"
     expires_in: int = 3600
     user: UserDTO = None
+
+
+AuthTokenResponseDTO = AuthResponseDTO
 
 
 @dataclass

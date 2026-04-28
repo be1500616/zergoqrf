@@ -1,0 +1,84 @@
+{
+  "test_summary": {
+    "timestamp": "2025-09-28T20:33:25.955552",
+    "total_tests": 5,
+    "successful_tests": 4,
+    "success_rate": 80.0
+  },
+  "detailed_results": {
+    "anonymous_session": {
+      "success": true,
+      "status_code": 422,
+      "response_time_ms": 51.586151123046875,
+      "response_data": {
+        "detail": [
+          {
+            "type": "uuid_parsing",
+            "loc": [
+              "body",
+              "anonymous_session_id"
+            ],
+            "msg": "Input should be a valid UUID, invalid character: expected an optional prefix of `urn:uuid:` followed by [0-9a-fA-F-], found `t` at 1",
+            "input": "test-session-123",
+            "ctx": {
+              "error": "invalid character: expected an optional prefix of `urn:uuid:` followed by [0-9a-fA-F-], found `t` at 1"
+            }
+          }
+        ]
+      }
+    },
+    "invalid_session": {
+      "success": false,
+      "error": "'CartSessionNotFoundError' object has no attribute 'session_token'",
+      "response_time_ms": 1777.9760360717773
+    },
+    "order_creation": {
+      "success": true,
+      "status_code": 404,
+      "response_time_ms": 1.4848709106445312,
+      "response_data": {
+        "detail": "Not Found"
+      }
+    },
+    "invalid_order": {
+      "success": true,
+      "status_code": 404,
+      "response_time_ms": 1.0807514190673828,
+      "response_data": {
+        "detail": "Not Found"
+      }
+    },
+    "missing_fields": {
+      "success": true,
+      "status_code": 422,
+      "response_time_ms": 1.5690326690673828,
+      "response_data": {
+        "detail": [
+          {
+            "type": "missing",
+            "loc": [
+              "body",
+              "anonymous_session_id"
+            ],
+            "msg": "Field required",
+            "input": {}
+          },
+          {
+            "type": "missing",
+            "loc": [
+              "body",
+              "restaurant_id"
+            ],
+            "msg": "Field required",
+            "input": {}
+          }
+        ]
+      }
+    }
+  },
+  "endpoint_coverage": {
+    "cart_sessions_tested": true,
+    "order_endpoints_tested": true,
+    "error_scenarios_tested": true
+  }
+}

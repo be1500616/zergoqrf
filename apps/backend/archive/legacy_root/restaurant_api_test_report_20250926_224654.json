@@ -1,0 +1,141 @@
+{
+  "executive_summary": {
+    "overall_status": "FAIL",
+    "total_tests": 2,
+    "passed_tests": 1,
+    "failed_tests": 1,
+    "success_rate": 50.0,
+    "test_execution_duration_seconds": 4.69,
+    "performance_target_met": false,
+    "average_response_time_ms": 2332.29
+  },
+  "detailed_results": {
+    "endpoint_tests": {
+      "restaurant_registration": {
+        "status": "FAIL",
+        "status_code": 500,
+        "response_time_ms": 4300.936937332153,
+        "meets_performance_target": false,
+        "error_message": "{\"detail\":\"Registration failed: Failed to create restaurant owner: Email address \\\"owner224db979@test.com\\\" is invalid\"}"
+      }
+    },
+    "performance_metrics": {},
+    "validation_results": {
+      "input_validation": {
+        "missing_required_fields": {
+          "status": "PASS",
+          "status_code": 422,
+          "response_time_ms": 11.198997497558594,
+          "expected_status": 422,
+          "error_details": [
+            {
+              "type": "missing",
+              "loc": [
+                "body",
+                "name"
+              ],
+              "msg": "Field required",
+              "input": {
+                "description": "Missing name and owner info"
+              }
+            },
+            {
+              "type": "missing",
+              "loc": [
+                "body",
+                "owner_email"
+              ],
+              "msg": "Field required",
+              "input": {
+                "description": "Missing name and owner info"
+              }
+            },
+            {
+              "type": "missing",
+              "loc": [
+                "body",
+                "owner_password"
+              ],
+              "msg": "Field required",
+              "input": {
+                "description": "Missing name and owner info"
+              }
+            }
+          ]
+        },
+        "invalid_email": {
+          "status": "PASS",
+          "status_code": 422,
+          "response_time_ms": 5.024194717407227,
+          "expected_status": 422,
+          "error_details": [
+            {
+              "type": "value_error",
+              "loc": [
+                "body",
+                "owner_email"
+              ],
+              "msg": "value is not a valid email address: An email address must have an @-sign.",
+              "input": "invalid-email-format",
+              "ctx": {
+                "reason": "An email address must have an @-sign."
+              }
+            }
+          ]
+        },
+        "short_password": {
+          "status": "PASS",
+          "status_code": 422,
+          "response_time_ms": 4.629850387573242,
+          "expected_status": 422,
+          "error_details": [
+            {
+              "type": "string_too_short",
+              "loc": [
+                "body",
+                "owner_password"
+              ],
+              "msg": "String should have at least 8 characters",
+              "input": "short",
+              "ctx": {
+                "min_length": 8
+              }
+            }
+          ]
+        }
+      }
+    },
+    "error_handling": {
+      "invalid_restaurant_code": {
+        "status": "PASS",
+        "status_code": 404,
+        "response_time_ms": 363.6510372161865,
+        "expected_status": 404,
+        "error_message": "Restaurant not found",
+        "proper_error_format": true
+      }
+    }
+  },
+  "performance_analysis": {
+    "total_performance_tests": 2,
+    "average_response_time": 2332.29,
+    "max_response_time": 4300.936937332153,
+    "min_response_time": 363.6510372161865,
+    "meets_target_count": 0,
+    "all_meet_target": false
+  },
+  "recommendations": [
+    "Fix failing test: endpoint_tests.restaurant_registration",
+    "Optimize endpoints that exceed 200ms response time target",
+    "Integrate JWT authentication system",
+    "Implement comprehensive error logging",
+    "Add request rate limiting",
+    "Set up monitoring and alerting",
+    "Add comprehensive integration tests"
+  ],
+  "metadata": {
+    "timestamp": "2025-09-26T22:46:54.797464",
+    "base_url": "http://localhost:8000",
+    "target_performance": "200ms response time"
+  }
+}

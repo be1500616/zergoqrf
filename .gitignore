@@ -249,3 +249,24 @@ coverage.xml
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# =============================
+# Local Agent / Workflow Artifacts
+# =============================
+.gitbutler-review-complete
+.github/workflows/workflow-processing-results.json
+.github/workflows/drawbridge-workflow-report.md
+.github/workflows/drawbridge-workflow.mdc
+
+# =============================
+# Local Analysis / Test Outputs
+# =============================
+apps/frontend/analysis_output*.txt
+apps/backend/*_test_results.json
+apps/backend/*_test_report_*.json
+
+# =============================
+# Generated Flutter Desktop Files (nested apps/)
+# =============================
+**/linux/flutter/generated_plugins.cmake
+**/windows/flutter/generated_plugins.cmake

@@ -2,6 +2,8 @@
 .DS_Store
 .env
 .env.*
+!.env.example
+!**/.env.example
 *.log
 *.swp
 *.swo
@@ -201,22 +203,6 @@ web-bundles/
 **/generated_plugin_registrant.*
 **/.dart_tool/package_config.json
 **/.dart_tool/package_config_subset
-
-# =============================
-# Temporary Documentation
-# =============================
-# Status and report files (keep in docs/reports if needed)
-*_REPORT.md
-*_STATUS.md
-*_SUMMARY.md
-*_PLAN.md
-ROUTER_COMPARISON.md
-INTEGRATION_*.md
-AUTH_INTEGRATION_PLAN.md
-FINAL_IMPLEMENTATION_REPORT.md
-IMPLEMENTATION_STATUS.md
-REVISED_IMPLEMENTATION_PLAN.md
-TASK_COMPLETION_SUMMARY.md
 
 # =============================
 # Test Artifacts

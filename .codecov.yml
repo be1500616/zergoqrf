@@ -1,0 +1,67 @@
+# Codecov configuration for ZERGO QR project
+# https://docs.codecov.io/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 2%
+        informational: true
+    patch:
+      default:
+        target: 75%
+        threshold: 5%
+        informational: true
+        
+  ignore:
+    # Ignore test files
+    - "apps/backend/tests/**/*"
+    - "apps/frontend/test/**/*"
+    - "apps/frontend/integration_test/**/*"
+    
+    # Ignore generated files
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
+    - "apps/frontend/lib/generated/**/*"
+    
+    # Ignore configuration files
+    - "**/main.dart"  # Entry points typically don't need coverage
+    - "**/__pycache__/**/*"
+    - "**/.dart_tool/**/*"
+
+flag_management:
+  default_rules:
+    carryforward: true
+    statuses:
+      - name_prefix: backend
+        type: project
+      - name_prefix: frontend  
+        type: project
+
+flags:
+  backend:
+    paths:
+      - apps/backend/
+    carryforward: true
+    
+  frontend:
+    paths:
+      - apps/frontend/lib/
+    carryforward: true
+
+comment:
+  layout: "reach,diff,flags,tree,reach"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  
+parsers:
+  gcov:
+    branch_detection:
+      conditional: true
+      loop: true
+      method: false
+      macro: false

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Worker API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Service Worker API Request Test</h1>
+    <p>This page tests the Service Worker's ability to handle API requests without causing "locked response body" errors.</p>
+
+    <div id="sw-status" class="test-section info">
+        <h3>Service Worker Status</h3>
+        <p id="sw-registration">Checking...</p>
+    </div>
+
+    <div class="test-section">
+        <h3>API Request Tests</h3>
+        <button onclick="testDirectAPI()">Test Direct API Call</button>
+        <button onclick="testCachedAPI()">Test Cached API Call</button>
+        <button onclick="testMultipleRequests()">Test Multiple Requests</button>
+        <button onclick="clearCache()">Clear Cache</button>
+    </div>
+
+    <div id="results" class="test-section">
+        <h3>Test Results</h3>
+        <div id="test-output"></div>
+    </div>
+
+    <script>
+        let testOutput = document.getElementById('test-output');
+        let swRegistration = null;
+
+        // Check Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    swRegistration = registration;
+                    document.getElementById('sw-registration').innerHTML = 
+                        '<span style="color: green;">✅ Service Worker registered successfully</span>';
+                    console.log('ServiceWorker registered:', registration);
+                })
+                .catch(error => {
+                    document.getElementById('sw-registration').innerHTML = 
+                        '<span style="color: red;">❌ Service Worker registration failed: ' + error + '</span>';
+                    console.error('ServiceWorker registration failed:', error);
+                });
+        } else {
+            document.getElementById('sw-registration').innerHTML = 
+                '<span style="color: orange;">⚠️ Service Worker not supported</span>';
+        }
+
+        function addResult(title, content, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+            div.innerHTML = `<h4>${title}</h4><pre>${content}</pre>`;
+            testOutput.appendChild(div);
+            testOutput.scrollTop = testOutput.scrollHeight;
+        }
+
+        async function testDirectAPI() {
+            addResult('Direct API Test', 'Testing direct API call to backend...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/public/menu/2C46XY');
+                const data = await response.json();
+                
+                addResult('Direct API Test - Success', 
+                    `Status: ${response.status}\n` +
+                    `Restaurant: ${data.restaurant.name}\n` +
+                    `Categories: ${data.categories.length}\n` +
+                    `Items: ${data.items.length}`, 'success');
+            } catch (error) {
+                addResult('Direct API Test - Error', error.toString(), 'error');
+            }
+        }
+
+        async function testCachedAPI() {
+            addResult('Cached API Test', 'Testing API call that should be cached by Service Worker...', 'info');
+            
+            try {
+                // This should match the Service Worker's API_CACHE_PATTERNS
+                const response = await fetch('/api/v1/public/menu/2C46XY');
+                const text = await response.text();
+                
+                addResult('Cached API Test - Result', 
+                    `Status: ${response.status}\n` +
+                    `Content-Type: ${response.headers.get('content-type')}\n` +
+                    `Response Length: ${text.length} characters\n` +
+                    `First 200 chars: ${text.substring(0, 200)}...`, 
+                    response.ok ? 'success' : 'error');
+            } catch (error) {
+                addResult('Cached API Test - Error', error.toString(), 'error');
+            }
+        }
+
+        async function testMultipleRequests() {
+            addResult('Multiple Requests Test', 'Testing multiple concurrent API requests...', 'info');
+            
+            const requests = [
+                fetch('http://localhost:8000/api/v1/public/menu/2C46XY'),
+                fetch('http://localhost:8000/api/v1/public/menu/restaurant/2C46XY'),
+                fetch('http://localhost:8000/healthz')
+            ];
+
+            try {
+                const responses = await Promise.all(requests);
+                const results = await Promise.all(responses.map(r => r.text()));
+                
+                let summary = '';
+                responses.forEach((response, index) => {
+                    summary += `Request ${index + 1}: ${response.status} (${results[index].length} chars)\n`;
+                });
+                
+                addResult('Multiple Requests Test - Success', summary, 'success');
+            } catch (error) {
+                addResult('Multiple Requests Test - Error', error.toString(), 'error');
+            }
+        }
+
+        async function clearCache() {
+            if (swRegistration) {
+                try {
+                    await swRegistration.active.postMessage({type: 'CLEAR_CACHE'});
+                    addResult('Cache Clear', 'Cache clear message sent to Service Worker', 'success');
+                } catch (error) {
+                    addResult('Cache Clear - Error', error.toString(), 'error');
+                }
+            } else {
+                addResult('Cache Clear - Error', 'No Service Worker registration found', 'error');
+            }
+        }
+
+        // Listen for messages from Service Worker
+        navigator.serviceWorker.addEventListener('message', event => {
+            console.log('Message from Service Worker:', event.data);
+            addResult('Service Worker Message', JSON.stringify(event.data, null, 2), 'info');
+        });
+
+        // Auto-run basic test on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (swRegistration) {
+                    testDirectAPI();
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:zergo_frontend/features/auth/application/auth_binding.dart';
+import 'package:zergo_frontend/core/core_binding.dart';
+import 'package:zergo_frontend/features/auth/application/supabase_auth_binding.dart';
 import 'package:zergo_frontend/features/auth/presentation/auth_screen.dart';
 import 'package:zergo_frontend/features/restaurants/restaurants.dart';
 
@@ -11,6 +12,10 @@ import 'core/supabase_init.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initSupabase();
+
+  // Initialize core dependencies globally
+  CoreBinding().dependencies();
+
   runApp(const ZergoApp());
 }
 
@@ -24,7 +29,7 @@ final _router = GoRouter(
     GoRoute(
       path: '/auth',
       builder: (context, state) {
-        AuthBinding().dependencies();
+        SupabaseAuthBinding().dependencies();
         return const AuthScreen();
       },
     ),

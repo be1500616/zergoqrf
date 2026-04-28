@@ -257,6 +257,8 @@ Desktop.ini
 .github/workflows/workflow-processing-results.json
 .github/workflows/drawbridge-workflow-report.md
 .github/workflows/drawbridge-workflow.mdc
+.github/workflows/CLAUDE.md
+GITBUTLER_*
 
 # =============================
 # Local Analysis / Test Outputs

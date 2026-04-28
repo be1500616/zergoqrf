@@ -1,0 +1,1866 @@
+# ZERGO QR DINER VIEW COMPREHENSIVE ENHANCEMENT PROMPT
+
+## 🎯 EXECUTIVE SUMMARY
+
+**Mission**: Transform the completely broken diner experience into a production-ready, end-to-end restaurant ordering platform that drives revenue and delights customers.
+
+**Current State**: CRITICAL - Frontend diner functionality is non-functional, backend capabilities are unused, and the core ordering flow is completely broken.
+
+**Target**: A seamless, production-ready platform that competes with market leaders like Swiggy, Zomato, and Uber Eats.
+
+---
+
+## 📋 CURRENT STATE ANALYSIS
+
+### 🔍 BACKEND CAPABILITIES VS ACTUAL IMPLEMENTATION
+
+#### ✅ What Backend Has (But Can't Use)
+1. **Comprehensive Cart System** (795 lines of code)
+   - Full CRUD operations with session management
+   - Anonymous session persistence
+   - Real-time price validation
+   - Advanced business logic (promo codes, taxes, delivery fees)
+   - Sophisticated cart migration (anonymous → authenticated)
+
+2. **Complete Order Management**
+   - Full order lifecycle management
+   - Payment processing with Razorpay
+   - Real-time order tracking via WebSockets
+   - Kitchen display system integration
+   - Delivery partner tracking
+
+3. **Advanced Public Menu System**
+   - Complex search and filtering
+   - Dietary preference support
+   - Restaurant branding and theming
+   - Performance-optimized queries
+
+4. **Authentication System**
+   - Hybrid authentication (anonymous + authenticated)
+   - Phone/email verification
+   - Role-based access control
+   - Session management
+
+#### ❌ What Backend Can't Use (Database Issues)
+1. **Missing `menu_categories` Table** - Complete blocker
+2. **Incomplete Restaurant Branding Schema** - No theming support
+3. **Schema Misalignment** - Backend expects columns that don't exist
+4. **Fallback Logic Hell** - Repository hardcoded with default values
+
+#### 💀 Frontend Implementation Status
+1. **Cart Controller**: 56 lines vs Backend's 795 lines - Basic in-memory storage only
+2. **No Checkout Flow** - Complete absence of order placement
+3. **No Payment Integration** - Cannot process transactions
+4. **No Order Tracking** - Cannot track placed orders
+5. **No Real-time Updates** - No WebSocket integration
+6. **Minimal Search** - No advanced filtering or dietary preferences
+
+---
+
+## 🎯 COMPREHENSIVE IMPLEMENTATION STRATEGY
+
+### PHASE 1: DATABASE FOUNDATION (BLOCKER - 4 HOURS)
+
+#### 1.1 Complete Schema Fix
+```sql
+-- Drop existing problematic tables and recreate with proper structure
+DROP TABLE IF EXISTS menu_items CASCADE;
+DROP TABLE IF EXISTS menus CASCADE;
+DROP TABLE IF EXISTS menu_categories CASCADE;
+
+-- Create proper menu_categories table
+CREATE TABLE menu_categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    image_url TEXT,
+    display_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create enhanced menu_items table
+CREATE TABLE menu_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+    category_id UUID REFERENCES menu_categories(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    base_price DECIMAL(10,2) NOT NULL CHECK (base_price > 0),
+    image_url TEXT,
+    gallery_images TEXT[] DEFAULT '{}',
+    status VARCHAR(50) DEFAULT 'available' CHECK (status IN ('available', 'unavailable', 'featured')),
+    dietary_indicators TEXT[] DEFAULT '{}',
+    allergen_info TEXT[] DEFAULT '{}',
+    preparation_time INTEGER,
+    spice_level VARCHAR(20),
+    is_vegetarian BOOLEAN DEFAULT false,
+    is_vegan BOOLEAN DEFAULT false,
+    is_gluten_free BOOLEAN DEFAULT false,
+    contains_nuts BOOLEAN DEFAULT false,
+    contains_dairy BOOLEAN DEFAULT false,
+    nutritional_info JSONB DEFAULT '{}',
+    ingredients TEXT[] DEFAULT '{}',
+    customizations_available BOOLEAN DEFAULT false,
+    display_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enhance restaurants table with complete branding
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS cuisine_type VARCHAR(100);
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS website TEXT;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS logo_url TEXT;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS cover_image_url TEXT;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS primary_color VARCHAR(7) DEFAULT '#FF6B35';
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS secondary_color VARCHAR(7) DEFAULT '#2C3E50';
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS accent_color VARCHAR(7) DEFAULT '#F39C12';
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS theme_config JSONB DEFAULT '{}';
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS operating_hours JSONB DEFAULT '{}';
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS minimum_order_amount DECIMAL(10,2) DEFAULT 0;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS delivery_fee DECIMAL(10,2) DEFAULT 0;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS tax_rate DECIMAL(5,2) DEFAULT 0;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS rating DECIMAL(3,2) DEFAULT 0;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
+```
+
+#### 1.2 Performance Indexes
+```sql
+-- Critical performance indexes
+CREATE INDEX IF NOT EXISTS idx_menu_items_restaurant_category ON menu_items(restaurant_id, category_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_status ON menu_items(status);
+CREATE INDEX IF NOT EXISTS idx_menu_items_dietary ON menu_items USING GIN(dietary_indicators);
+CREATE INDEX IF NOT EXISTS idx_menu_categories_restaurant ON menu_categories(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_restaurants_active ON restaurants(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_restaurants_code ON restaurants(code);
+```
+
+#### 1.3 Complete RLS Policies
+```sql
+-- Enable RLS on all tables
+ALTER TABLE menu_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+
+-- Create proper isolation policies
+CREATE POLICY menu_categories_isolation ON menu_categories
+    FOR ALL USING (restaurant_id IN (
+        SELECT id FROM restaurants WHERE is_active = true
+    ));
+
+CREATE POLICY menu_items_isolation ON menu_items
+    FOR ALL USING (restaurant_id IN (
+        SELECT id FROM restaurants WHERE is_active = true
+    ));
+```
+
+#### 1.4 Sample Data for Testing
+```sql
+-- Insert comprehensive test data
+INSERT INTO restaurants (id, name, code, description, cuisine_type, phone, address, email, logo_url, primary_color, secondary_color, accent_color, operating_hours, minimum_order_amount, delivery_fee, tax_rate, rating, review_count, tags)
+VALUES (
+    '550e8400-e29b-41d4-a716-446655440000',
+    'Spice Garden',
+    'SPICE001',
+    'Authentic Indian cuisine with a modern twist',
+    'Indian',
+    '+1234567890',
+    '123 Main Street, Downtown',
+    'info@spicegarden.com',
+    'https://example.com/logo.png',
+    '#FF6B35',
+    '#2C3E50',
+    '#F39C12',
+    '{"monday": "11:00-23:00", "tuesday": "11:00-23:00", "wednesday": "11:00-23:00", "thursday": "11:00-23:00", "friday": "11:00-23:00", "saturday": "11:00-23:00", "sunday": "11:00-23:00"}',
+    100.00,
+    5.00,
+    8.5,
+    4.5,
+    150,
+    ARRAY['dine-in', 'delivery', 'takeout', 'vegetarian', 'spicy']
+);
+
+-- Insert sample categories and items
+INSERT INTO menu_categories (id, restaurant_id, name, description, display_order, is_active)
+VALUES
+    ('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440000', 'Appetizers', 'Start your meal with our delicious appetizers', 1, true),
+    ('550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440000', 'Main Course', 'Hearty main courses for every taste', 2, true),
+    ('550e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440000', 'Desserts', 'Sweet endings to your perfect meal', 3, true);
+
+-- Insert sample menu items
+INSERT INTO menu_items (id, restaurant_id, category_id, name, description, base_price, image_url, status, dietary_indicators, preparation_time, is_vegetarian, is_vegan, display_order)
+VALUES
+    ('550e8400-e29b-41d4-a716-446655440010', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'Paneer Tikka', 'Marinated cottage cheese grilled to perfection', 12.99, 'https://example.com/paneer.jpg', 'available', ARRAY['vegetarian'], 20, true, false, 1),
+    ('550e8400-e29b-41d4-a716-446655440011', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'Chicken Wings', 'Spicy chicken wings with blue cheese dip', 14.99, 'https://example.com/wings.jpg', 'featured', ARRAY['non-veg'], 25, false, false, 2);
+```
+
+### PHASE 2: BACKEND REPOSITORY OVERHAUL (3 HOURS)
+
+#### 2.1 Remove All Fallback Logic
+```python
+# File: apps/backend/app/features/public_menu/infrastructure/public_menu_repos_impl.py
+# COMPLETE REWRITE - Remove all hardcoded fallbacks and default values
+
+class PublicMenuRepositoryImpl(IPublicMenuRepository):
+    def __init__(self, supabase: Client):
+        self._supabase = supabase
+
+    async def get_restaurant_by_code(self, restaurant_code: str) -> Optional[PublicRestaurantBranding]:
+        """Get restaurant branding information by code."""
+        try:
+            result = (
+                self._supabase.table("restaurants")
+                .select("*")
+                .eq("code", restaurant_code)
+                .eq("is_active", True)
+                .single()
+                .execute()
+            )
+
+            if not result.data:
+                return None
+
+            data = result.data
+            return PublicRestaurantBranding(
+                id=UUID(data["id"]),
+                name=data["name"],
+                code=data["code"],
+                logo_url=data.get("logo_url"),
+                primary_color=data.get("primary_color", "#FF6B35"),
+                secondary_color=data.get("secondary_color", "#2C3E50"),
+                accent_color=data.get("accent_color", "#F39C12"),
+                description=data.get("description"),
+                cuisine_type=data.get("cuisine_type"),
+                phone=data.get("phone"),
+                address=data.get("address"),
+                email=data.get("email"),
+                website=data.get("website"),
+                cover_image_url=data.get("cover_image_url"),
+                theme_config=data.get("theme_config", {}),
+                operating_hours=data.get("operating_hours", {}),
+                minimum_order_amount=data.get("minimum_order_amount", 0),
+                delivery_fee=data.get("delivery_fee", 0),
+                tax_rate=data.get("tax_rate", 0),
+                rating=data.get("rating", 0),
+                review_count=data.get("review_count", 0),
+                tags=data.get("tags", []),
+            )
+        except Exception as e:
+            logger.error(f"Error in get_restaurant_by_code: {e}")
+            return None
+
+    # Implement all other methods with proper database queries
+    # Remove all fallback logic and default values
+    # Add proper error handling and logging
+    # Implement database transaction management
+```
+
+#### 2.2 Add Comprehensive Error Handling
+```python
+# Add proper error types
+class PublicMenuError(Exception):
+    """Base error for public menu operations."""
+    pass
+
+class RestaurantNotFoundError(PublicMenuError):
+    """Restaurant not found error."""
+    pass
+
+class MenuDataCorruptionError(PublicMenuError):
+    """Menu data corruption error."""
+    pass
+
+class DatabaseConnectionError(PublicMenuError):
+    """Database connection error."""
+    pass
+
+# Add error handling middleware
+@app.middleware("http")
+async def public_menu_error_handler(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except PublicMenuError as e:
+        return JSONResponse(
+            status_code=400,
+            content={"error": str(e), "code": "PUBLIC_MENU_ERROR"}
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in public menu: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal server error", "code": "INTERNAL_ERROR"}
+        )
+```
+
+#### 2.3 Add Performance Optimization
+```python
+# Add Redis caching for menu data
+import redis
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
+FastAPICache.init(RedisBackend(redis_client), prefix="zergo-cache")
+
+@app.get("/api/v1/public/menu/{restaurant_code}")
+@cache(expire=900)  # 15 minutes cache
+async def get_public_menu(restaurant_code: str):
+    """Get public menu with caching."""
+    # Your existing logic here
+    pass
+```
+
+### PHASE 3: FRONTEND CART SYSTEM OVERHAUL (4 HOURS)
+
+#### 3.1 Complete Cart Controller Rewrite
+```dart
+// File: apps/frontend/lib/features/diner/application/controllers/cart_controller.dart
+import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
+
+class CartController extends GetxController {
+  final Dio _dio = Dio();
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  // Reactive state
+  final Rx<Map<String, dynamic>> _cart = Rx<Map<String, dynamic>>({});
+  final RxBool _isLoading = false.obs;
+  final RxString _sessionId = ''.obs;
+  final RxString _error = ''.obs;
+
+  // Getters
+  Map<String, dynamic> get cart => _cart.value;
+  bool get isLoading => _isLoading.value;
+  String get sessionId => _sessionId.value;
+  String get error => _error.value;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeCart();
+  }
+
+  Future<void> _initializeCart() async {
+    try {
+      _isLoading.value = true;
+
+      // Check for existing session
+      final existingSession = await _getExistingSession();
+      if (existingSession != null) {
+        _sessionId.value = existingSession;
+        await _loadCartFromBackend();
+      } else {
+        await _createNewSession();
+      }
+    } catch (e) {
+      _error.value = 'Failed to initialize cart';
+      print('Cart initialization error: $e');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> addItem(String itemId, Map<String, dynamic> itemData, {int quantity = 1}) async {
+    try {
+      _isLoading.value = true;
+
+      final response = await _dio.post(
+        '/api/v1/cart/items',
+        data: {
+          'session_id': _sessionId.value,
+          'item_id': itemId,
+          'quantity': quantity,
+          'customization_data': itemData['customization'] ?? {},
+          'special_instructions': itemData['special_instructions'] ?? '',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        await _loadCartFromBackend();
+      }
+    } catch (e) {
+      _error.value = 'Failed to add item to cart';
+      print('Add item error: $e');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> updateItemQuantity(String itemId, int quantity) async {
+    try {
+      _isLoading.value = true;
+
+      final response = await _dio.put(
+        '/api/v1/cart/items/$itemId',
+        data: {
+          'session_id': _sessionId.value,
+          'quantity': quantity,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        await _loadCartFromBackend();
+      }
+    } catch (e) {
+      _error.value = 'Failed to update item quantity';
+      print('Update item error: $e');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> removeItem(String itemId) async {
+    try {
+      _isLoading.value = true;
+
+      final response = await _dio.delete(
+        '/api/v1/cart/items/$itemId',
+        data: {
+          'session_id': _sessionId.value,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        await _loadCartFromBackend();
+      }
+    } catch (e) {
+      _error.value = 'Failed to remove item from cart';
+      print('Remove item error: $e');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> clearCart() async {
+    try {
+      _isLoading.value = true;
+
+      final response = await _dio.delete(
+        '/api/v1/cart/sessions/${_sessionId.value}',
+      );
+
+      if (response.statusCode == 200) {
+        _cart.value = {};
+        await _createNewSession();
+      }
+    } catch (e) {
+      _error.value = 'Failed to clear cart';
+      print('Clear cart error: $e');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> _loadCartFromBackend() async {
+    try {
+      final response = await _dio.get(
+        '/api/v1/cart/sessions/${_sessionId.value}',
+      );
+
+      if (response.statusCode == 200) {
+        _cart.value = response.data['cart'];
+      }
+    } catch (e) {
+      print('Load cart error: $e');
+    }
+  }
+
+  Future<String?> _getExistingSession() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        // Check for authenticated session
+        final response = await _dio.get(
+          '/api/v1/cart/sessions/user/${user.id}',
+        );
+        if (response.statusCode == 200) {
+          return response.data['session_id'];
+        }
+      }
+
+      // Check for anonymous session in local storage
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('cart_session_id');
+    } catch (e) {
+      print('Get existing session error: $e');
+      return null;
+    }
+  }
+
+  Future<void> _createNewSession() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      Map<String, dynamic> sessionData = {
+        'device_info': {
+          'platform': GetPlatform.isAndroid ? 'android' :
+                      GetPlatform.isIOS ? 'ios' : 'web',
+          'user_agent': 'ZERGO-DINER/1.0',
+        },
+      };
+
+      if (user != null) {
+        sessionData['user_id'] = user.id;
+      }
+
+      final response = await _dio.post(
+        '/api/v1/cart/sessions',
+        data: sessionData,
+      );
+
+      if (response.statusCode == 200) {
+        _sessionId.value = response.data['session_id'];
+
+        // Save session for persistence
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cart_session_id', _sessionId.value);
+      }
+    } catch (e) {
+      print('Create session error: $e');
+    }
+  }
+}
+```
+
+#### 3.2 Create Cart UI Components
+```dart
+// File: apps/frontend/lib/features/diner/presentation/screens/cart_screen.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
+import '../controllers/cart_controller.dart';
+import 'widgets/cart_item_card.dart';
+import 'widgets/cart_summary.dart';
+import 'widgets/empty_cart_widget.dart';
+
+class CartScreen extends GetView<CartController> {
+  const CartScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Your Cart'),
+        actions: [
+          IconButton(
+            onPressed: controller.clearCart,
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ],
+      ),
+      body: Obx(() {
+        if (controller.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final cart = controller.cart;
+        final items = cart['items'] ?? [];
+
+        if (items.isEmpty) {
+          return const EmptyCartWidget();
+        }
+
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return CartItemCard(
+                    item: item,
+                    onQuantityChanged: (quantity) {
+                      controller.updateItemQuantity(
+                        item['id'],
+                        quantity,
+                      );
+                    },
+                    onRemove: () {
+                      controller.removeItem(item['id']);
+                    },
+                  ).animate().fadeIn().slideX();
+                },
+              ),
+            ),
+            CartSummary(
+              cart: cart,
+              onCheckout: () => Get.toNamed('/checkout'),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+```
+
+### PHASE 4: COMPLETE ORDER FLOW IMPLEMENTATION (6 HOURS)
+
+#### 4.1 Checkout Screen
+```dart
+// File: apps/frontend/lib/features/diner/presentation/screens/checkout_screen.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
+import '../controllers/cart_controller.dart';
+import '../controllers/checkout_controller.dart';
+import 'widgets/customer_info_form.dart';
+import 'widgets/payment_method_selector.dart';
+import 'widgets/order_summary.dart';
+
+class CheckoutScreen extends GetView<CheckoutController> {
+  const CheckoutScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cartController = Get.find<CartController>();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Checkout'),
+      ),
+      body: Obx(() {
+        if (controller.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Customer Information
+              const Text(
+                'Customer Information',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ).animate().fadeIn(),
+              const SizedBox(height: 16),
+              CustomerInfoForm(
+                controller: controller,
+              ),
+              const SizedBox(height: 32),
+
+              // Delivery Address
+              const Text(
+                'Delivery Address',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ).animate().fadeIn(delay: 200.ms),
+              const SizedBox(height: 16),
+              DeliveryAddressSelector(
+                controller: controller,
+              ),
+              const SizedBox(height: 32),
+
+              // Payment Method
+              const Text(
+                'Payment Method',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ).animate().fadeIn(delay: 400.ms),
+              const SizedBox(height: 16),
+              PaymentMethodSelector(
+                controller: controller,
+              ),
+              const SizedBox(height: 32),
+
+              // Order Summary
+              const Text(
+                'Order Summary',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ).animate().fadeIn(delay: 600.ms),
+              const SizedBox(height: 16),
+              OrderSummary(
+                cart: cartController.cart,
+                controller: controller,
+              ),
+              const SizedBox(height: 32),
+
+              // Place Order Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: controller.placeOrder,
+                  child: const Text('Place Order'),
+                ),
+              ).animate().fadeIn(delay: 800.ms),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+}
+```
+
+#### 4.2 Payment Integration
+```dart
+// File: apps/frontend/lib/features/diner/presentation/screens/payment_screen.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
+import '../controllers/payment_controller.dart';
+
+class PaymentScreen extends GetView<PaymentController> {
+  const PaymentScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Payment'),
+      ),
+      body: Obx(() {
+        if (controller.isProcessing) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.paymentStatus == 'success') {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 80,
+                ).animate().scale(),
+                const SizedBox(height: 16),
+                const Text(
+                  'Payment Successful!',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ).animate().fadeIn(),
+                const SizedBox(height: 16),
+                const Text(
+                  'Your order has been placed successfully.',
+                  style: TextStyle(fontSize: 16),
+                ).animate().fadeIn(delay: 200.ms),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () => Get.offAllNamed('/order-tracking'),
+                  child: const Text('Track Order'),
+                ).animate().fadeIn(delay: 400.ms),
+              ],
+            ),
+          );
+        }
+
+        if (controller.paymentStatus == 'failed') {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error,
+                  color: Colors.red,
+                  size: 80,
+                ).animate().scale(),
+                const SizedBox(height: 16),
+                const Text(
+                  'Payment Failed',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ).animate().fadeIn(),
+                const SizedBox(height: 16),
+                Text(
+                  controller.errorMessage ?? 'Please try again.',
+                  style: const TextStyle(fontSize: 16),
+                ).animate().fadeIn(delay: 200.ms),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: controller.retryPayment,
+                  child: const Text('Retry Payment'),
+                ).animate().fadeIn(delay: 400.ms),
+              ],
+            ),
+          );
+        }
+
+        // Payment form
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Payment Details',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ).animate().fadeIn(),
+              const SizedBox(height: 16),
+
+              // Order summary
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Order Summary',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Subtotal'),
+                          Text('₹${controller.orderAmount}'),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Delivery Fee'),
+                          Text('₹${controller.deliveryFee}'),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Tax'),
+                          Text('₹${controller.taxAmount}'),
+                        ],
+                      ),
+                      const Divider(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Total',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '₹${controller.totalAmount}',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ).animate().fadeIn(delay: 200.ms),
+
+              const SizedBox(height: 32),
+
+              // Payment method selection
+              const Text(
+                'Select Payment Method',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ).animate().fadeIn(delay: 400.ms),
+              const SizedBox(height: 16),
+
+              // Payment methods
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: controller.paymentMethods.length,
+                itemBuilder: (context, index) {
+                  final method = controller.paymentMethods[index];
+                  return Obx(() => RadioListTile<String>(
+                    title: Text(method['name']),
+                    subtitle: Text(method['description']),
+                    value: method['id'],
+                    groupValue: controller.selectedPaymentMethod.value,
+                    onChanged: (value) {
+                      controller.selectedPaymentMethod.value = value!;
+                    },
+                  )).animate().fadeIn(delay: (600 + (index * 100)).ms);
+                },
+              ),
+
+              const SizedBox(height: 32),
+
+              // Pay button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: controller.processPayment,
+                  child: const Text('Pay ₹${controller.totalAmount}'),
+                ),
+              ).animate().fadeIn(delay: 1000.ms),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+}
+```
+
+#### 4.3 Order Tracking Screen Enhancement
+```dart
+// File: apps/frontend/lib/features/diner/presentation/screens/order_tracking_screen.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
+
+import '../controllers/order_tracking_controller.dart';
+import 'widgets/order_status_timeline.dart';
+import 'widgets/delivery_partner_info.dart';
+import 'widgets/order_actions.dart';
+
+class OrderTrackingScreen extends GetView<OrderTrackingController> {
+  const OrderTrackingScreen({super.key, required this.orderId});
+
+  final String orderId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Order Tracking'),
+        actions: [
+          IconButton(
+            onPressed: controller.refreshOrderStatus,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: Obx(() {
+        if (controller.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final order = controller.order;
+        if (order.isEmpty) {
+          return const Center(child: Text('Order not found'));
+        }
+
+        return RefreshIndicator(
+          onRefresh: controller.refreshOrderStatus,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Order Header
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Order #${order['order_number']}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ).animate().fadeIn(),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Placed on ${DateFormat('MMM dd, yyyy • hh:mm a').format(
+                            DateTime.parse(order['created_at']),
+                          )}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                          ),
+                        ).animate().fadeIn(delay: 200.ms),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(order['status']),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _formatStatus(order['status']),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ).animate().fadeIn(delay: 400.ms),
+                            const SizedBox(width: 8),
+                            if (order['estimated_delivery_time'] != null)
+                              Expanded(
+                                child: Text(
+                                  'ETA: ${DateFormat('hh:mm a').format(
+                                    DateTime.parse(order['estimated_delivery_time']),
+                                  )}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.end,
+                                ),
+                              ).animate().fadeIn(delay: 600.ms),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ).animate().slideY(),
+
+                const SizedBox(height: 24),
+
+                // Order Status Timeline
+                const Text(
+                  'Order Status',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ).animate().fadeIn(delay: 200.ms),
+                const SizedBox(height: 16),
+                OrderStatusTimeline(
+                  currentStatus: order['status'],
+                  statusHistory: order['status_history'] ?? [],
+                ).animate().fadeIn(delay: 400.ms),
+
+                const SizedBox(height: 24),
+
+                // Delivery Partner Info (if applicable)
+                if (order['delivery_partner'] != null) ...[
+                  const Text(
+                    'Delivery Partner',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ).animate().fadeIn(delay: 600.ms),
+                  const SizedBox(height: 16),
+                  DeliveryPartnerInfo(
+                    partner: order['delivery_partner'],
+                  ).animate().fadeIn(delay: 800.ms),
+                  const SizedBox(height: 24),
+                ],
+
+                // Order Items
+                const Text(
+                  'Order Items',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ).animate().fadeIn(delay: 1000.ms),
+                const SizedBox(height: 16),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: order['items']?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final item = order['items'][index];
+                    return Card(
+                      child: ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            item['image_url'] ?? '',
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 60,
+                                height: 60,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.fastfood),
+                              );
+                            },
+                          ),
+                        ),
+                        title: Text(item['name']),
+                        subtitle: Text('Qty: ${item['quantity']}'),
+                        trailing: Text('₹${item['total_price']}'),
+                      ),
+                    ).animate().fadeIn(delay: (1200 + (index * 100)).ms);
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                // Order Actions
+                OrderActions(
+                  order: order,
+                  onContactSupport: controller.contactSupport,
+                  onCancelOrder: controller.cancelOrder,
+                  onRateOrder: controller.rateOrder,
+                ).animate().fadeIn(delay: 1600.ms),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'confirmed':
+        return Colors.blue;
+      case 'preparing':
+        return Colors.purple;
+      case 'ready_for_pickup':
+        return Colors.green;
+      case 'out_for_delivery':
+        return Colors.teal;
+      case 'delivered':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _formatStatus(String status) {
+    return status.split('_').map((word) =>
+      word[0].toUpperCase() + word.substring(1).toLowerCase()
+    ).join(' ');
+  }
+}
+```
+
+### PHASE 5: REAL-TIME FEATURES IMPLEMENTATION (3 HOURS)
+
+#### 5.1 Real-time Order Tracking Service
+```dart
+// File: apps/frontend/lib/features/diner/application/services/realtime_service.dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:get/get.dart';
+
+class RealtimeService extends GetxService {
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  final RxMap<String, dynamic> _realtimeOrderStatus = RxMap<String, dynamic>({});
+  final RxList<Map<String, dynamic>> _realtimeNotifications = RxList<Map<String, dynamic>>([]);
+
+  Map<String, dynamic> get realtimeOrderStatus => _realtimeOrderStatus;
+  List<Map<String, dynamic>> get realtimeNotifications => _realtimeNotifications;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeRealtime();
+  }
+
+  void _initializeRealtime() {
+    // Listen to order status changes
+    _supabase.channel('order_updates').on(
+      RealtimeListenTypes.postgresChanges,
+      ChannelFilter(
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: 'user_id=eq.${_supabase.auth.currentUser?.id}',
+      ),
+      (payload, [ref]) {
+        _handleOrderUpdate(payload);
+      },
+    ).subscribe();
+
+    // Listen to notifications
+    _supabase.channel('notifications').on(
+      RealtimeListenTypes.postgresChanges,
+      ChannelFilter(
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: 'user_id=eq.${_supabase.auth.currentUser?.id}',
+      ),
+      (payload, [ref]) {
+        _handleNotification(payload);
+      },
+    ).subscribe();
+  }
+
+  void _handleOrderUpdate(dynamic payload) {
+    final newRecord = payload['new'];
+    final oldRecord = payload['old'];
+
+    if (newRecord['status'] != oldRecord['status']) {
+      _realtimeOrderStatus[newRecord['id']] = newRecord;
+
+      // Show notification
+      Get.snackbar(
+        'Order Update',
+        'Your order status has been updated to: ${newRecord['status']}',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.blue,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  void _handleNotification(dynamic payload) {
+    final notification = payload['new'];
+    _realtimeNotifications.add(notification);
+
+    // Show notification
+    Get.snackbar(
+      notification['title'] ?? 'Notification',
+      notification['message'] ?? 'You have a new notification',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+    );
+  }
+
+  Future<void> subscribeToOrderUpdates(String orderId) async {
+    await _supabase.channel('order_$orderId').on(
+      RealtimeListenTypes.postgresChanges,
+      ChannelFilter(
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: 'id=eq.$orderId',
+      ),
+      (payload, [ref]) {
+        _handleOrderUpdate(payload);
+      },
+    ).subscribe();
+  }
+
+  Future<void> unsubscribeFromOrderUpdates(String orderId) async {
+    await _supabase.channel('order_$orderId').unsubscribe();
+  }
+}
+```
+
+#### 5.2 Push Notification Integration
+```dart
+// File: apps/frontend/lib/features/diner/application/services/push_notification_service.dart
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get/get.dart';
+
+class PushNotificationService extends GetxService {
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+
+  final RxString _fcmToken = ''.obs;
+
+  String get fcmToken => _fcmToken.value;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeNotifications();
+  }
+
+  Future<void> _initializeNotifications() async {
+    // Request permission
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      // Get FCM token
+      String? token = await _messaging.getToken();
+      if (token != null) {
+        _fcmToken.value = token;
+        _sendTokenToServer(token);
+      }
+
+      // Handle foreground messages
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        _handleForegroundMessage(message);
+      });
+
+      // Handle background messages
+      FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
+
+      // Initialize local notifications
+      const AndroidInitializationSettings androidSettings =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+      const DarwinInitializationSettings iosSettings =
+          DarwinInitializationSettings();
+
+      const InitializationSettings initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
+
+      await _notifications.initialize(initSettings);
+    }
+  }
+
+  Future<void> _sendTokenToServer(String token) async {
+    try {
+      // Send token to your backend
+      // await _apiService.updateFcmToken(token);
+    } catch (e) {
+      print('Error sending FCM token: $e');
+    }
+  }
+
+  void _handleForegroundMessage(RemoteMessage message) {
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
+
+    if (notification != null && android != null) {
+      _notifications.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'zergo_channel',
+            'ZERGO Notifications',
+            channelDescription: 'Order status updates and notifications',
+            importance: Importance.max,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+      );
+    }
+  }
+
+  static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
+    // Handle background messages
+    print('Handling background message: ${message.messageId}');
+  }
+}
+```
+
+### PHASE 6: PERFORMANCE OPTIMIZATION (2 HOURS)
+
+#### 6.1 Image Optimization
+```dart
+// File: apps/frontend/lib/core/services/image_service.dart
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+
+class ImageService {
+  static Widget optimizedNetworkImage(
+    String imageUrl, {
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.cover,
+    Widget Function(BuildContext, ImageProvider<Object>)? placeholder,
+    Widget Function(BuildContext, String, Object)? errorWidget,
+  }) {
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      width: width,
+      height: height,
+      fit: fit,
+      placeholder: (context, url) => placeholder?.call(context, NetworkImage(url)) ??
+          Container(
+            color: Colors.grey[300],
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+      errorWidget: (context, url, error) => errorWidget?.call(context, url, error) ??
+          Container(
+            color: Colors.grey[300],
+            child: const Icon(Icons.broken_image),
+          ),
+      fadeInDuration: const Duration(milliseconds: 300),
+      fadeOutDuration: const Duration(milliseconds: 300),
+      memCacheWidth: width?.toInt(),
+      memCacheHeight: height?.toInt(),
+    );
+  }
+
+  static String getOptimizedImageUrl(String originalUrl, {int? width, int? height}) {
+    // Add CDN parameters for optimization
+    if (width != null || height != null) {
+      final uri = Uri.parse(originalUrl);
+      final params = Map<String, String>.from(uri.queryParameters);
+
+      if (width != null) params['w'] = width.toString();
+      if (height != null) params['h'] = height.toString();
+      params['q'] = '80'; // Quality
+      params['auto'] = 'format'; // Auto format
+
+      return uri.replace(queryParameters: params).toString();
+    }
+
+    return originalUrl;
+  }
+}
+```
+
+#### 6.2 Lazy Loading and Pagination
+```dart
+// File: apps/frontend/lib/core/widgets/lazy_load_list.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+class LazyLoadList extends StatefulWidget {
+  final Future<List<Map<String, dynamic>>> Function(int page) dataFetcher;
+  final Widget Function(BuildContext, Map<String, dynamic>, int) itemBuilder;
+  final Widget Function(BuildContext)? loadingWidget;
+  final Widget Function(BuildContext)? emptyWidget;
+  final Widget Function(BuildContext, Object)? errorWidget;
+  final int pageSize;
+
+  const LazyLoadList({
+    super.key,
+    required this.dataFetcher,
+    required this.itemBuilder,
+    this.loadingWidget,
+    this.emptyWidget,
+    this.errorWidget,
+    this.pageSize = 20,
+  });
+
+  @override
+  State<LazyLoadList> createState() => _LazyLoadListState();
+}
+
+class _LazyLoadListState extends State<LazyLoadList> {
+  final ScrollController _scrollController = ScrollController();
+  final RxList<Map<String, dynamic>> _items = RxList<Map<String, dynamic>>([]);
+  final RxInt _currentPage = 1.obs;
+  final RxBool _isLoading = false.obs;
+  final RxBool _hasMore = true.obs;
+  final RxString _error = ''.obs;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      _loadMoreData();
+    }
+  }
+
+  Future<void> _loadData() async {
+    try {
+      _isLoading.value = true;
+      _error.value = '';
+
+      final data = await widget.dataFetcher(_currentPage.value);
+
+      _items.addAll(data);
+      _hasMore.value = data.length == widget.pageSize;
+
+      if (_currentPage.value == 1 && data.isEmpty) {
+        _hasMore.value = false;
+      }
+    } catch (e) {
+      _error.value = e.toString();
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> _loadMoreData() async {
+    if (_isLoading.value || !_hasMore.value) return;
+
+    _currentPage.value++;
+    await _loadData();
+  }
+
+  Future<void> _refreshData() async {
+    _currentPage.value = 1;
+    _items.clear();
+    await _loadData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (_error.isNotEmpty && _items.isEmpty) {
+        return widget.errorWidget?.call(context, _error.value) ??
+            Center(child: Text(_error.value));
+      }
+
+      if (_items.isEmpty && !_isLoading.value) {
+        return widget.emptyWidget?.call(context) ?? const Center(child: Text('No data available'));
+      }
+
+      return RefreshIndicator(
+        onRefresh: _refreshData,
+        child: ListView.builder(
+          controller: _scrollController,
+          itemCount: _items.length + (_hasMore.value ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index < _items.length) {
+              return widget.itemBuilder(context, _items[index], index);
+            }
+
+            return widget.loadingWidget?.call(context) ??
+                const Center(child: CircularProgressIndicator());
+          },
+        ),
+      );
+    });
+  }
+}
+```
+
+### PHASE 7: ACCESSIBILITY IMPLEMENTATION (2 HOURS)
+
+#### 7.1 Accessible Widgets
+```dart
+// File: apps/frontend/lib/shared/widgets/accessible_widgets.dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class AccessibleButton extends StatefulWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  final Widget? child;
+  final ButtonStyle? style;
+  final bool autofocus;
+  final FocusNode? focusNode;
+
+  const AccessibleButton({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.child,
+    this.style,
+    this.autofocus = false,
+    this.focusNode,
+  });
+
+  @override
+  State<AccessibleButton> createState() => _AccessibleButtonState();
+}
+
+class _AccessibleButtonState extends State<AccessibleButton> {
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.onInit();
+    _focusNode = widget.focusNode ?? FocusNode();
+  }
+
+  @override
+  void dispose() {
+    if (widget.focusNode == null) {
+      _focusNode.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: widget.autofocus,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.enter ||
+              event.logicalKey == LogicalKeyboardKey.space) {
+            if (widget.onPressed != null) {
+              widget.onPressed!();
+              return KeyEventResult.handled;
+            }
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Semantics(
+        button: true,
+        enabled: widget.onPressed != null,
+        label: widget.label,
+        child: ElevatedButton(
+          onPressed: widget.onPressed,
+          style: widget.style,
+          focusNode: _focusNode,
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+class AccessibleTextField extends StatefulWidget {
+  final String label;
+  final String? hint;
+  final TextEditingController? controller;
+  final String? Function(String?)? validator;
+  final bool obscureText;
+  final TextInputType keyboardType;
+  final TextInputAction textInputAction;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final bool autofocus;
+  final FocusNode? focusNode;
+
+  const AccessibleTextField({
+    super.key,
+    required this.label,
+    this.hint,
+    this.controller,
+    this.validator,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text,
+    this.textInputAction = TextInputAction.done,
+    this.onChanged,
+    this.onSubmitted,
+    this.autofocus = false,
+    this.focusNode,
+  });
+
+  @override
+  State<AccessibleTextField> createState() => _AccessibleTextFieldState();
+}
+
+class _AccessibleTextFieldState extends State<AccessibleTextField> {
+  late FocusNode _focusNode;
+  bool _hasError = false;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.onInit();
+    _focusNode = widget.focusNode ?? FocusNode();
+  }
+
+  @override
+  void dispose() {
+    if (widget.focusNode == null) {
+      _focusNode.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: widget.label,
+      hint: widget.hint,
+      textField: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.label,
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: widget.controller,
+            obscureText: widget.obscureText,
+            keyboardType: widget.keyboardType,
+            textInputAction: widget.textInputAction,
+            onChanged: (value) {
+              if (widget.onChanged != null) {
+                widget.onChanged!(value);
+              }
+              _validateField(value);
+            },
+            onSubmitted: widget.onSubmitted,
+            autofocus: widget.autofocus,
+            focusNode: _focusNode,
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              errorText: _hasError ? _errorText : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _validateField(String value) {
+    if (widget.validator != null) {
+      final error = widget.validator!(value);
+      setState(() {
+        _hasError = error != null;
+        _errorText = error;
+      });
+    }
+  }
+}
+```
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+### FUNCTIONAL REQUIREMENTS
+- ✅ Complete end-to-end ordering flow from menu browsing to order completion
+- ✅ Real-time order tracking with live status updates
+- ✅ Payment processing with Razorpay integration
+- ✅ Cart synchronization across devices and sessions
+- ✅ Restaurant theming and branding support
+- ✅ Advanced search and filtering capabilities
+- ✅ Offline mode with local persistence
+- ✅ Push notifications for order updates
+
+### TECHNICAL REQUIREMENTS
+- ✅ Database schema properly designed with all required features
+- ✅ Backend API follows REST principles with comprehensive features
+- ✅ Frontend implementation follows clean architecture patterns
+- ✅ Security best practices implemented throughout
+- ✅ Performance optimized for production scale (< 2 second load times)
+- ✅ Complete test coverage with automated testing
+- ✅ Real-time features working seamlessly
+- ✅ Accessibility compliance (WCAG 2.1 AA)
+
+### USER EXPERIENCE REQUIREMENTS
+- ✅ Seamless user experience from menu discovery to order completion
+- ✅ Fast loading times and responsive interactions
+- ✅ Beautiful UI that works on all devices with proper theming
+- ✅ Comprehensive error handling and user feedback
+- ✅ Real-time updates and notifications
+- ✅ Accessibility features for all users
+- ✅ Offline functionality for poor network conditions
+
+### PRODUCTION READINESS
+- ✅ No hardcoded credentials or development bypasses
+- ✅ Proper logging and monitoring implemented
+- ✅ Security vulnerabilities addressed and tested
+- ✅ Performance benchmarks met and validated
+- ✅ Complete documentation provided
+- ✅ Deployment and scaling considerations addressed
+- ✅ Customer support features implemented
+
+---
+
+## 📋 IMPLEMENTATION CHECKLIST
+
+### DATABASE LAYER
+- [ ] Drop existing problematic tables and recreate with proper structure
+- [ ] Create complete menu_categories table with all required fields
+- [ ] Create enhanced menu_items table with dietary indicators and customization support
+- [ ] Enhance restaurants table with complete branding and theming support
+- [ ] Add performance indexes for all critical queries
+- [ ] Implement proper RLS policies for data isolation
+- [ ] Add comprehensive sample data for testing
+- [ ] Test all queries with real data
+
+### BACKEND LAYER
+- [ ] Rewrite public menu repository to remove all fallback logic
+- [ ] Add comprehensive error handling and logging
+- [ ] Implement Redis caching for performance optimization
+- [ ] Add request/response validation and sanitization
+- [ ] Implement proper HTTP status codes and error responses
+- [ ] Add rate limiting and security headers
+- [ ] Test all API endpoints with real data
+- [ ] Add comprehensive logging and monitoring
+
+### FRONTEND LAYER
+- [ ] Complete cart controller rewrite with backend integration
+- [ ] Implement comprehensive checkout flow with all screens
+- [ ] Add payment integration with Razorpay
+- [ ] Create order tracking screen with real-time updates
+- [ ] Implement real-time service with WebSocket integration
+- [ ] Add push notification service
+- [ ] Implement image optimization and lazy loading
+- [ ] Add accessibility features throughout the app
+- [ ] Test all user flows end-to-end
+
+### INTEGRATION LAYER
+- [ ] Test complete order flow from menu browsing to delivery
+- [ ] Verify real-time updates work correctly
+- [ ] Test payment processing and receipt generation
+- [ ] Verify cart synchronization across devices
+- [ ] Test offline mode and synchronization
+- [ ] Validate performance benchmarks
+- [ ] Test accessibility features
+- [ ] Conduct comprehensive security testing
+
+### DEPLOYMENT LAYER
+- [ ] Configure environment variables for all services
+- [ ] Set up database migrations and seeding
+- [ ] Configure Redis caching and CDN
+- [ ] Set up logging and monitoring
+- [ ] Configure SSL certificates and security headers
+- [ ] Set up backup and disaster recovery
+- [ ] Configure scaling and load balancing
+- [ ] Set up CI/CD pipeline
+
+---
+
+## 🔍 KEY FOCUS AREAS
+
+### 1. DATA INTEGRITY
+- Ensure all database queries work with real data, not fallback values
+- Implement proper data validation and sanitization
+- Add comprehensive error handling for database operations
+- Test data consistency across all features
+
+### 2. USER EXPERIENCE
+- Implement smooth, responsive interactions throughout the app
+- Add comprehensive loading states and error handling
+- Implement progressive loading for large datasets
+- Ensure accessibility for all users
+
+### 3. PERFORMANCE
+- Optimize database queries with proper indexing
+- Implement caching strategies at all levels
+- Optimize image loading and network requests
+- Test performance under load and poor network conditions
+
+### 4. SECURITY
+- Implement proper authentication and authorization
+- Validate all user inputs and sanitize outputs
+- Implement rate limiting and DDoS protection
+- Test security vulnerabilities and penetration
+
+### 5. SCALABILITY
+- Design for horizontal scaling of all components
+- Implement proper connection pooling and resource management
+- Optimize for concurrent users and high traffic
+- Test scaling behavior and performance
+
+---
+
+## 🎯 DELIVERABLES
+
+### IMMEDIATE DELIVERABLES (4 HOURS)
+1. Fixed database schema with all required tables and relationships
+2. Backend repository overhaul with no fallback logic
+3. Basic frontend cart system with backend integration
+4. Simple checkout flow implementation
+5. Basic order tracking functionality
+
+### MEDIUM DELIVERABLES (8 HOURS)
+1. Complete order flow with payment integration
+2. Real-time updates and notifications
+3. Performance optimization throughout
+4. Accessibility implementation
+5. Comprehensive error handling
+
+### ADVANCED DELIVERABLES (12 HOURS)
+1. Advanced features (search, filtering, recommendations)
+2. Offline mode and synchronization
+3. Advanced analytics and reporting
+4. Customer account management
+5. Production deployment setup
+
+---
+
+## 🚀 EXECUTION STRATEGY
+
+This comprehensive enhancement plan transforms the broken diner experience into a production-ready restaurant ordering platform. The key focus areas are:
+
+1. **Data Integrity**: Fix database schema and remove all fallback logic
+2. **Complete Integration**: Connect frontend to all backend capabilities
+3. **Performance**: Optimize for production scale and user experience
+4. **Security**: Implement proper security measures throughout
+5. **Scalability**: Design for growth and high concurrency
+
+The implementation follows a phased approach, starting with critical database fixes and progressing to advanced features. Each phase builds upon the previous one, ensuring a solid foundation and comprehensive functionality.
+
+**Expected Outcome**: A fully functional, production-ready restaurant ordering platform that can compete with market leaders and drive significant revenue for restaurant partners.

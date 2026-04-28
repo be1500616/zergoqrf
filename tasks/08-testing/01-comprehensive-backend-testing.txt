@@ -1,0 +1,69 @@
+**Comprehensive Backend Testing and Issue Resolution**
+
+**Primary Objective:** Conduct end-to-end testing of all backend features and fix any issues to ensure a fully functional restaurant management system.
+
+**Specific Tasks:**
+
+1. **Documentation and API Testing:**
+   - Fix any issues with the Swagger documentation at `/docs` endpoint
+   - Ensure all API endpoints are properly documented and accessible
+
+2. **Complete User Flow Testing with Test Credentials:**
+   - Use the provided test credentials:
+     - User 1: `test@gmail.com` / `test1234`
+     - User 2: `customer@gmail.com` / `customer1234`
+     - OTP Testing: Phone `917484999999` / Token `123456`
+   - Extract and use JWT tokens from authentication responses for subsequent API calls
+
+3. **End-to-End Restaurant Owner Workflow:**
+   - **Authentication Flow:** Sign up/sign in as restaurant owner
+   - **Restaurant Creation:** Create a new restaurant with India-based test data (Indian restaurant name, address, phone numbers, cuisine types)
+   - **Menu Management:** 
+     - Create multiple menu categories (e.g., "Appetizers", "Main Course", "Desserts", "Beverages")
+     - Add menu items to each category with Indian dishes (e.g., "Butter Chicken", "Biryani", "Samosa", "Masala Chai")
+     - Include proper pricing in INR, descriptions, and availability status
+   - **QR Code Generation:** Generate QR codes for restaurant tables
+   - **Public Menu Testing:** Verify that QR codes properly display the restaurant's menu
+
+4. **Database Operations and Policies:**
+   - Test all CRUD operations for restaurants, menus, and QR tables
+   - Verify Supabase Row Level Security (RLS) policies are working correctly
+   - Test multi-tenant access control (users can only access their own restaurant data)
+   - If needed, create or modify Postgres functions and policies using proper SQL code
+
+5. **Feature-Specific Testing:**
+   - **Restaurant Management:** Create, read, update restaurant details
+   - **Menu System:** Full menu CRUD operations with categories and items
+   - **QR Table System:** Generate and manage QR codes for tables
+   - **Public Menu Display:** Test public-facing menu endpoints that don't require authentication
+
+6. **Error Handling and Edge Cases:**
+   - Test invalid authentication scenarios
+   - Test access control violations (users trying to access other restaurants' data)
+   - Test malformed requests and proper error responses
+   - Verify all endpoints return appropriate HTTP status codes
+
+7. **India-Specific Localization:**
+   - Use Indian restaurant names, addresses, and phone number formats
+   - Use INR currency for pricing
+   - Include popular Indian dishes and categories in test data
+   - Ensure timezone and locale settings are appropriate for Indian operations
+
+8. **Request-Response Validation:**
+   - Verify all API responses match expected schemas
+   - Test pagination, filtering, and sorting where applicable
+   - Ensure proper JSON structure and data types in responses
+
+**Success Criteria:**
+- All authentication flows work seamlessly
+- Complete restaurant setup and menu creation workflow functions end-to-end
+- QR code generation and public menu display work correctly
+- All endpoints return proper responses with appropriate status codes
+- Multi-tenant security is enforced correctly
+- System is ready for production use with Indian restaurant data
+
+**Deliverables:**
+- Fix any identified issues in the codebase
+- Provide test results for each major workflow
+- Document any database schema changes or policy updates made
+- Ensure the system works with realistic Indian restaurant test data

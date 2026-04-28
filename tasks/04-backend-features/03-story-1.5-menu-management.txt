@@ -1,0 +1,44 @@
+I want you to implement Story 1.2 (Table Management) end-to-end in "YOLO mode" . Based on the current state of the ZERGO QR sys │
+│   tem:                                                                                               │
+│                                                                                                                                                                             │
+│   - A working Supabase database with proper schema and sample data                                                                                                          │
+│   - A functional FastAPI backend server running on port 8000 with restaurant registration and management                                                                    │
+│   - A Flutter frontend that builds successfully and serves on port 3000 with complete restaurant setup flow                                                                 │
+│   - Fixed import conflicts and authentication flow structure                                                                                                                │
+│   - Complete restaurant registration, settings management, and staff management functionality                                                                               │
+│                                                                                                                                                                             │
+│   Follow the rules and guidelines for FastAPI and Flutter mentioned in `/Users/ashishverma/repos/zergo/zergoqrf/rules`                                                      │
+│                                                                                                                                                                             │
+│   Please implement the complete Story 1.2 Table management functionality including:                                                                                          │
+│                                                                                                                                                                             │
+│   1. **Backend Implementation:**                                                                                                                                            │
+│      - Implement menu management API endpoints (categories, items, modifiers, pricing)                                                                                      │
+│      - Add menu item CRUD operations with image upload support                                                                                                              │
+│      - Implement menu versioning and publishing system                                                                                                                      │
+│      - Add menu availability and scheduling features                                                                                                                        │
+│      - Ensure all menu operations work with restaurant authentication                                                                                                       │
+│                                                                                                                                                                             │
+│   2. **Frontend Implementation:**                                                                                                                                           │
+│      - Build the menu management UI screens with modern SaaS design                                                                                                         │
+│      - Implement drag-and-drop menu organization interface                                                                                                                  │
+│      - Add menu item creation/editing forms with image upload                                                                                                               │
+│      - Create real-time menu preview system for customer view                                                                                                               │
+│      - Implement menu publishing and version control interface                                                                                                              │
+│      - Connect frontend to backend APIs with proper error handling                                                                                                          │
+│                                                                                                                                                                             │
+│   3. **Integration Testing:**                                                                                                                                               │
+│      - Verify end-to-end menu management workflow                                                                                                                           │
+│      - Test menu publishing and customer preview functionality                                                                                                              │
+│      - Validate menu item availability and scheduling                                                                                                                       │
+│      - Ensure proper integration with restaurant authentication                                                                                                             │
+│      - Test image upload and storage functionality                                                                                                                          │
+│                                                                                                                                                                             │
+│   4. **Story 1.5 Completion Criteria:**                                                                                                                                     │
+│      - Restaurant owners can create and organize menu categories                                                                                                            │
+│      - Menu items can be added with descriptions, prices, and images                                                                                                        │
+│      - Menu modifiers and variations can be configured                                                                                                                      │
+│      - Real-time preview shows customer-facing menu experience                                                                                                              │
+│      - Menu publishing system allows version control and scheduling                                                                                                         │
+│      - All components integrate properly with existing restaurant setup                                                                                                     │
+│                                                                                                                                                                             │                                                                                                                                                                             │
+│   Reference the design specifications in `/Users/ashishverma/repos/zergo/zergoqrf/design-system/story-1.5-menu-management-design-spec.md` for UI/UX guidance.

@@ -1,0 +1,1115 @@
+I need you to implement a complete, production-ready diner view/public view feature for the ZERGO QR restaurant ordering platform, fixing all identified issues and implementing missing functionality to create a seamless end-to-end user experience from restaurant discovery to order completion.
+
+## 📋 Current Status & Known Issues
+
+### Critical Database Issues:
+
+#### 1. Missing `menu_categories` Table (BLOCKER)
+**Issue:** Backend extensively references `menu_categories` table but it doesn't exist in any migration file , check with supabase using supabase
+**Evidence:**
+- Backend queries reference `mc.is_active` and `mc.display_order` from non-existent table
+- `/Users/ashishverma/repos/zergo/zergoqrf/apps/backend/app/features/public_menu/infrastructure/public_menu_repos_impl.py` lines 54-75 contain complex COALESCE statements for missing columns
+**Impact:** All category-based menu functionality fails, frontend cannot display menu categories
+
+#### 2. Schema Misalignment Between Backend and Database (BLOCKER)
+**Issue:** Backend queries reference columns that don't exist in the actual database schema
+**Evidence:**
+- Backend expects: `dietary_indicators`, `allergen_info`, `preparation_time`, `gallery_images`
+- Database has: Basic JSONB storage in `menus.categories` field
+**Impact:** Menu item details cannot be displayed, dietary information missing
+
+#### 3. Incomplete Restaurant Branding Schema (HIGH)
+**Issue:** Initial schema lacks critical branding fields that backend and frontend expect
+**Missing Fields:** `primary_color`, `secondary_color`, `accent_color`, `logo_url`, `description`, `cuisine_type`, `phone`, `address`, `is_active`
+**Impact:** Restaurant theming doesn't work, UI shows generic appearance
+
+### Critical Backend Issues:
+
+#### 4. Public Menu Repository with Fallback Logic (BLOCKER)
+**Issue:** Repository implementation contains extensive fallback logic for missing schema elements
+**Location:** `/Users/ashishverma/repos/zergo/zergoqrf/apps/backend/app/features/public_menu/infrastructure/public_menu_repos_impl.py`
+**Evidence:** Lines 54-75 have hardcoded default values and complex COALESCE statements
+**Impact:** Menu data returns incomplete or incorrect information
+
+#### 5. Complex Cart System vs Simple Frontend Implementation (BLOCKER)
+**Issue:** Backend implements sophisticated session-based cart management while frontend uses simple in-memory cart
+**Backend Evidence:** 795 lines of cart router with full CRUD, session management, anonymous session persistence
+**Frontend Evidence:** 56 lines of cart controller with simple Map storage, no API integration
+**Impact:** Cart functionality broken, no persistence across sessions
+
+#### 6. Order Management System Without Frontend Integration (BLOCKER)
+**Issue:** Comprehensive order management backend exists but no frontend checkout/order confirmation flow
+**Backend Evidence:** Complete order router, payment processing, real-time updates
+**Frontend Evidence:** No checkout screen, order confirmation, or payment integration found
+**Impact:** Users cannot complete orders, no payment processing
+
+### Critical Frontend Issues:
+
+#### 7. Minimal Cart Implementation (BLOCKER)
+**Issue:** Frontend cart controller is extremely basic compared to backend capabilities
+**Location:** `/Users/ashishverma/repos/zergo/zergoqrf/apps/frontend/lib/features/diner/application/controllers/cart_controller.dart`
+**Evidence:** Only basic quantity management, no session persistence, API integration, or price calculations
+**Impact:** Cart doesn't sync with backend, no order persistence
+
+#### 8. No Checkout Flow Implementation (BLOCKER)
+**Issue:** Complete absence of checkout, payment, and order confirmation screens
+**Missing Components:** Cart review screen, customer information form, payment method selection, order confirmation screen, digital receipt
+**Impact:** Users cannot complete purchases, revenue generation impossible
+
+#### 9. Order Tracking Screen Present But Isolated (HIGH)
+**Issue:** Order tracking screen exists but no integration points from checkout flow
+**Location:** `/Users/ashishverma/repos/zergo/zergoqrf/apps/frontend/lib/features/order_tracking/presentation/screens/order_tracking_screen.dart`
+**Evidence:** Well-implemented screen but no navigation path from order completion
+**Impact:** Users cannot track orders after placement
+
+#### 10. No Real-time Updates Implementation (HIGH)
+**Issue:** Backend supports real-time updates but frontend has no WebSocket or subscription implementation
+**Backend Evidence:** PostgreSQL Realtime enabled on orders and status tables
+**Frontend Evidence:** No real-time controller or subscription logic found
+**Impact:** Users don't receive order status updates, poor user experience
+
+### Integration Issues:
+
+#### 11. Data Model Misalignment (BLOCKER)
+**Issue:** Frontend and backend data models are completely misaligned
+**Backend Expectations:** Complex branding configuration, dietary indicators array, category-based organization
+**Frontend Implementation:** Simplified models, no branding support, basic category structure
+**Impact:** Data cannot be properly displayed, inconsistent user experience
+
+#### 12. Authentication Integration Gap (HIGH)
+**Issue:** Backend supports hybrid authentication (anonymous + authenticated) but frontend only implements basic auth
+**Backend Evidence:** Complex session management in cart system
+**Frontend Evidence:** Basic auth controller without session integration
+**Impact:** Anonymous users cannot access features, session management broken
+
+#### 13. API Endpoints Without Frontend Consumers (HIGH)
+**Issue:** Many backend endpoints have no corresponding frontend implementation
+**Evidence:** 15+ cart APIs but frontend only uses basic in-memory cart, complete order management with no frontend integration
+**Impact:** Backend functionality wasted, inconsistent user experience
+
+### Performance Issues:
+
+#### 14. Database Query Optimization (MEDIUM)
+**Issue:** Public menu repository uses complex JSON aggregation without proper indexing
+**Location:** `/Users/ashishverma/repos/zergo/zergoqrf/apps/backend/app/features/public_menu/infrastructure/public_menu_repos_impl.py`
+**Evidence:** Lines 90-150 contain complex JSON building queries
+**Impact:** Slow menu loading, poor user experience
+
+#### 15. No Frontend Performance Optimization (HIGH)
+**Issue:** Frontend lacks performance critical features
+**Evidence:** No lazy loading, no pagination, no caching, no image optimization
+**Impact:** App slow and unresponsive, especially with large menus
+
+#### 16. Real-time Performance Concerns (MEDIUM)
+**Issue:** Real-time system lacks optimization for high concurrent users
+**Evidence:** No connection pooling or subscription management for WebSockets
+**Impact:** System may crash under load, poor scalability
+
+### Security Issues:
+
+#### 17. Missing RLS Policies (HIGH)
+**Issue:** Some tables lack proper Row Level Security policies
+**Location:** `/Users/ashishverma/repos/zergo/zergoqrf/infra/supabase/migrations/20250928000002_add_order_management.sql`
+**Evidence:** Orders table visible to all restaurant staff without proper filtering
+**Impact:** Data breach risk, privacy violations
+
+#### 18. Session Security Gaps (MEDIUM)
+**Issue:** Anonymous session system lacks proper security measures
+**Evidence:** No automatic cleanup of expired sessions, no IP verification
+**Impact:** Session hijacking risk, unauthorized access
+
+#### 19. Data Validation Gaps (MEDIUM)
+**Issue:** Frontend lacks proper input validation before API calls
+**Evidence:** No validation of item availability or price changes in cart operations
+**Impact:** Invalid data submission, system instability
+
+### Missing Features:
+
+#### 20. Complete Customer Order Flow (BLOCKER)
+**Missing Components:** Cart review screen, customer information form, payment method selection, order confirmation, digital receipt
+**Impact:** Core business functionality missing, revenue generation impossible
+
+#### 21. Real-time Order Updates (HIGH)
+**Missing Components:** WebSocket connections, real-time status indicators, push notifications, ETA updates
+**Impact:** Poor user experience, no order visibility
+
+#### 22. Customer Account Management (MEDIUM)
+**Missing Components:** Customer registration/login, order history, favorite items, delivery addresses, payment methods
+**Impact:** No customer retention, repeat business difficult
+
+#### 23. Search and Filter Capabilities (MEDIUM)
+**Missing Components:** Dietary preference filtering, price range filtering, category filtering, text search, sorting
+**Impact:** Poor menu navigation, reduced discoverability
+
+#### 24. Accessibility Features (LOW)
+**Missing Components:** Screen reader support, keyboard navigation, high contrast mode, text scaling
+**Impact:** Excludes users with disabilities, compliance issues
+
+## 🎯 Detailed Task Breakdown for AI Agent
+
+### Task 1: Database Schema Fix (CRITICAL)
+**Priority:** BLOCKER
+**Files:**
+- `infra/supabase/migrations/` (create new migration file: `20250930000000_fix_diner_view_schema.sql`)
+- `apps/backend/app/features/public_menu/infrastructure/public_menu_repos_impl.py`
+
+**Actions:**
+1. Create complete `menu_categories` table:
+   ```sql
+   CREATE TABLE menu_categories (
+       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+       restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+       name VARCHAR(255) NOT NULL,
+       description TEXT,
+       image_url TEXT,
+       display_order INTEGER DEFAULT 0,
+       is_active BOOLEAN DEFAULT true,
+       created_at TIMESTAMPTZ DEFAULT NOW(),
+       updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   ```
+
+2. Create complete `menu_items` table:
+   ```sql
+   CREATE TABLE menu_items (
+       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+       restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+       category_id UUID REFERENCES menu_categories(id) ON DELETE CASCADE,
+       name VARCHAR(255) NOT NULL,
+       description TEXT,
+       base_price DECIMAL(10,2) NOT NULL CHECK (base_price > 0),
+       image_url TEXT,
+       gallery_images TEXT[] DEFAULT '{}',
+       status VARCHAR(50) DEFAULT 'available' CHECK (status IN ('available', 'unavailable', 'featured')),
+       dietary_indicators TEXT[] DEFAULT '{}',
+       allergen_info TEXT[] DEFAULT '{}',
+       preparation_time INTEGER,
+       spice_level VARCHAR(20),
+       is_vegetarian BOOLEAN DEFAULT false,
+       is_vegan BOOLEAN DEFAULT false,
+       is_gluten_free BOOLEAN DEFAULT false,
+       contains_nuts BOOLEAN DEFAULT false,
+       contains_dairy BOOLEAN DEFAULT false,
+       nutritional_info JSONB DEFAULT '{}',
+       ingredients TEXT[] DEFAULT '{}',
+       customizations_available BOOLEAN DEFAULT false,
+       display_order INTEGER DEFAULT 0,
+       is_active BOOLEAN DEFAULT true,
+       created_at TIMESTAMPTZ DEFAULT NOW(),
+       updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   ```
+
+3. Enhance `restaurants` table with complete branding:
+   ```sql
+   ALTER TABLE restaurants ADD COLUMN description TEXT;
+   ALTER TABLE restaurants ADD COLUMN cuisine_type VARCHAR(100);
+   ALTER TABLE restaurants ADD COLUMN phone VARCHAR(20);
+   ALTER TABLE restaurants ADD COLUMN address TEXT;
+   ALTER TABLE restaurants ADD COLUMN email VARCHAR(255);
+   ALTER TABLE restaurants ADD COLUMN website TEXT;
+   ALTER TABLE restaurants ADD COLUMN logo_url TEXT;
+   ALTER TABLE restaurants ADD COLUMN cover_image_url TEXT;
+   ALTER TABLE restaurants ADD COLUMN primary_color VARCHAR(7) DEFAULT '#FF6B35';
+   ALTER TABLE restaurants ADD COLUMN secondary_color VARCHAR(7) DEFAULT '#2C3E50';
+   ALTER TABLE restaurants ADD COLUMN accent_color VARCHAR(7) DEFAULT '#F39C12';
+   ALTER TABLE restaurants ADD COLUMN theme_config JSONB DEFAULT '{}';
+   ALTER TABLE restaurants ADD COLUMN social_media JSONB DEFAULT '{}';
+   ALTER TABLE restaurants ADD COLUMN operating_hours JSONB DEFAULT '{}';
+   ALTER TABLE restaurants ADD COLUMN delivery_radius INTEGER DEFAULT 5;
+   ALTER TABLE restaurants ADD COLUMN minimum_order_amount DECIMAL(10,2) DEFAULT 0;
+   ALTER TABLE restaurants ADD COLUMN delivery_fee DECIMAL(10,2) DEFAULT 0;
+   ALTER TABLE restaurants ADD COLUMN tax_rate DECIMAL(5,2) DEFAULT 0;
+   ALTER TABLE restaurants ADD COLUMN rating DECIMAL(3,2) DEFAULT 0;
+   ALTER TABLE restaurants ADD COLUMN review_count INTEGER DEFAULT 0;
+   ALTER TABLE restaurants ADD COLUMN is_active BOOLEAN DEFAULT true;
+   ALTER TABLE restaurants ADD COLUMN is_featured BOOLEAN DEFAULT false;
+   ALTER TABLE restaurants ADD COLUMN tags TEXT[] DEFAULT '{}';
+   ```
+
+4. Add performance indexes:
+   ```sql
+   CREATE INDEX idx_menu_items_restaurant_id ON menu_items(restaurant_id);
+   CREATE INDEX idx_menu_items_category_id ON menu_items(category_id);
+   CREATE INDEX idx_menu_items_status ON menu_items(status);
+   CREATE INDEX idx_menu_items_active ON menu_items(is_active) WHERE is_active = true;
+   CREATE INDEX idx_menu_items_featured ON menu_items(status) WHERE status = 'featured';
+   CREATE INDEX idx_menu_categories_restaurant_id ON menu_categories(restaurant_id);
+   CREATE INDEX idx_menu_categories_active ON menu_categories(is_active) WHERE is_active = true;
+   CREATE INDEX idx_menu_categories_display_order ON menu_categories(display_order);
+   CREATE INDEX idx_menu_items_dietary ON menu_items USING GIN(dietary_indicators);
+   CREATE INDEX idx_restaurants_code ON restaurants(code);
+   CREATE INDEX idx_restaurants_active ON restaurants(is_active) WHERE is_active = true;
+   CREATE INDEX idx_restaurants_featured ON restaurants(is_featured) WHERE is_featured = true;
+   CREATE INDEX idx_restaurants_rating ON restaurants(rating DESC);
+   ```
+
+5. Implement proper RLS policies:
+   ```sql
+   ALTER TABLE menu_categories ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+
+   CREATE POLICY menu_categories_isolation ON menu_categories
+       FOR ALL USING (restaurant_id IN (
+           SELECT id FROM restaurants WHERE is_active = true
+       ));
+
+   CREATE POLICY menu_items_isolation ON menu_items
+       FOR ALL USING (restaurant_id IN (
+           SELECT id FROM restaurants WHERE is_active = true
+       ));
+
+   CREATE POLICY restaurants_public_read ON restaurants
+       FOR SELECT USING (is_active = true);
+   ```
+
+6. Add sample data for testing:
+   ```sql
+   -- Insert sample restaurant with complete branding
+   INSERT INTO restaurants (id, name, code, description, cuisine_type, phone, address, email, logo_url, primary_color, secondary_color, accent_color, operating_hours, minimum_order_amount, delivery_fee, tax_rate, rating, review_count, tags)
+   VALUES (
+       uuid_generate_v4(),
+       'Test Restaurant',
+       'TEST001',
+       'A wonderful dining experience with authentic flavors and warm hospitality',
+       'Multi-cuisine',
+       '+1234567890',
+       '123 Main Street, City, State 12345',
+       'info@testrestaurant.com',
+       'https://example.com/logo.png',
+       '#FF6B35',
+       '#2C3E50',
+       '#F39C12',
+       '{"monday": "11:00-23:00", "tuesday": "11:00-23:00", "wednesday": "11:00-23:00", "thursday": "11:00-23:00", "friday": "11:00-23:00", "saturday": "11:00-23:00", "sunday": "11:00-23:00"}',
+       100.00,
+       5.00,
+       8.5,
+       4.5,
+       150,
+       ARRAY['dine-in', 'delivery', 'takeout', 'vegetarian', 'vegan', 'gluten-free']
+   );
+
+   -- Insert sample categories
+   INSERT INTO menu_categories (id, restaurant_id, name, description, image_url, display_order, is_active)
+   VALUES
+       (uuid_generate_v4(), (SELECT id FROM restaurants WHERE code = 'TEST001'), 'Appetizers', 'Start your meal with our delicious appetizers', 'https://example.com/appetizers.jpg', 1, true),
+       (uuid_generate_v4(), (SELECT id FROM restaurants WHERE code = 'TEST001'), 'Main Course', 'Hearty main courses for every taste', 'https://example.com/maincourse.jpg', 2, true),
+       (uuid_generate_v4(), (SELECT id FROM restaurants WHERE code = 'TEST001'), 'Desserts', 'Sweet endings to your perfect meal', 'https://example.com/desserts.jpg', 3, true),
+       (uuid_generate_v4(), (SELECT id FROM restaurants WHERE code = 'TEST001'), 'Beverages', 'Refreshing drinks and beverages', 'https://example.com/beverages.jpg', 4, true);
+
+   -- Insert sample menu items
+   INSERT INTO menu_items (id, restaurant_id, category_id, name, description, base_price, image_url, status, dietary_indicators, preparation_time, is_vegetarian, is_vegan, display_order)
+   VALUES
+       (uuid_generate_v4(), (SELECT id FROM restaurants WHERE code = 'TEST001'), (SELECT id FROM menu_categories WHERE name = 'Appetizers'), 'Spring Rolls', 'Crispy vegetable spring rolls with sweet chili sauce', 8.99, 'https://example.com/springrolls.jpg', 'available', ARRAY['vegetarian', 'vegan'], 15, true, true, 1),
+       (uuid_generate_v4(), (SELECT id FROM restaurants WHERE code = 'TEST001'), (SELECT id FROM menu_categories WHERE name = 'Appetizers'), 'Chicken Wings', 'Spicy chicken wings with blue cheese dip', 12.99, 'https://example.com/wings.jpg', 'featured', ARRAY['non-veg'], 20, false, false, 2);
+   ```
+
+**Success Criteria:**
+- ✅ All required tables exist with complete structurew
+- ✅ Foreign key constraints working properly
+- ✅ RLS policies properly isolate restaurant data
+- ✅ Sample data loads successfully for testing
+- ✅ Backend queries work without hardcoded fallbacks
+
+### Task 2: Backend Public Menu API Overhaul (CRITICAL)
+**Priority:** BLOCKER
+**Files:**
+- `apps/backend/app/features/public_menu/infrastructure/public_menu_repos_impl.py`
+- `apps/backend/app/features/public_menu/presentation/public_menu_router.py`
+- `apps/backend/app/features/public_menu/application/use_cases/`
+- `apps/backend/app/features/public_menu/presentation/public_menu_schemas.py`
+
+**Actions:**
+1. Completely rewrite repository implementation:
+   ```python
+   # Remove all hardcoded fallback values
+   # Replace with actual database field queries
+   # Fix UUID vs String handling for JSON responses
+   # Implement proper error handling and logging
+   # Add database transaction management
+   # Implement proper null handling for optional fields
+   # Add query optimization with proper joins
+   ```
+
+2. Update public menu router with enhanced endpoints:
+   ```python
+   # Add proper error handling for all database operations
+   # Implement consistent response formats with Pydantic schemas
+   # Add comprehensive input validation
+   # Implement rate limiting (100 requests per minute)
+   # Add request/response logging for analytics
+   # Add proper HTTP status codes for different error scenarios
+   # Add API versioning and backward compatibility
+   ```
+
+3. Create comprehensive use cases:
+   ```python
+   # GetPublicMenuUseCase - Enhanced with caching
+   # SearchMenuItemsUseCase - Advanced search with filters
+   # GetRestaurantBrandingUseCase - Complete branding info
+   # GetFeaturedItemsUseCase - Curated featured items
+   # GetMenuAnalyticsUseCase - Usage statistics
+   ```
+
+4. Implement caching layer:
+   ```python
+   # Redis caching for menu data (15-minute TTL)
+   # Browser cache headers for static assets
+   # Cache invalidation on menu updates
+   # Stale-while-revalidate strategy for better UX
+   ```
+
+5. Add comprehensive error handling:
+   ```python
+   # Custom error types for different failure scenarios
+   # Proper error logging with structured logging
+   # User-friendly error messages
+   # Error rate monitoring and alerting
+   ```
+
+**Success Criteria:**
+- ✅ All public menu endpoints work with real database data
+- ✅ Restaurant branding data returned with all fields
+- ✅ Menu categories and items load with complete details
+- ✅ Search functionality works with filters and sorting
+- ✅ Featured items and recommendations work
+- ✅ Error responses are consistent and helpful
+- ✅ Performance optimized with caching (< 500ms response time)
+
+### Task 3: Frontend Data Model and Repository Fix (CRITICAL)
+**Priority:** BLOCKER
+**Files:**
+- `apps/frontend/lib/features/diner/domain/entities/`
+- `apps/frontend/lib/features/diner/infrastructure/menu_repository_impl.dart`
+- `apps/frontend/lib/features/diner/application/controllers/menu_controller.dart`
+- `apps/frontend/lib/core/services/api_service.dart`
+
+**Actions:**
+1. Update all frontend data models:
+   ```dart
+   // Update RestaurantBranding with all new fields
+   class RestaurantBranding {
+     final String id;
+     final String name;
+     final String code;
+     final String? description;
+     final String? cuisineType;
+     final String? phone;
+     final String? address;
+     final String? email;
+     final String? logoUrl;
+     final String? coverImageUrl;
+     final String primaryColor;
+     final String secondaryColor;
+     final String accentColor;
+     final Map<String, dynamic>? themeConfig;
+     final Map<String, dynamic>? operatingHours;
+     final double? minimumOrderAmount;
+     final double? deliveryFee;
+     final double? taxRate;
+     final double? rating;
+     final int? reviewCount;
+     final List<String>? tags;
+   }
+
+   // Update MenuItem with complete details
+   class MenuItem {
+     final String id;
+     final String categoryId;
+     final String name;
+     final String? description;
+     final double basePrice;
+     final String? imageUrl;
+     final List<String> galleryImages;
+     final ItemStatus status;
+     final List<String> dietaryIndicators;
+     final List<String> allergenInfo;
+     final int? preparationTime;
+     final String? spiceLevel;
+     final bool isVegetarian;
+     final bool isVegan;
+     final bool isGlutenFree;
+     final bool containsNuts;
+     final bool containsDairy;
+     final Map<String, dynamic>? nutritionalInfo;
+     final List<String> ingredients;
+     final bool customizationsAvailable;
+     final int displayOrder;
+   }
+   ```
+
+2. Fix menu repository implementation:
+   ```dart
+   // Update API calls to match new backend endpoints
+   // Implement proper HTTP client with timeout (30 seconds)
+   // Add comprehensive error handling with retry logic
+   // Add request/response interceptors for logging
+   // Implement proper JSON serialization/deserialization
+   // Add network state monitoring and offline handling
+   // Add request cancellation for fast navigation
+   ```
+
+3. Enhance menu controller:
+   ```dart
+   // Add comprehensive error handling with user-friendly messages
+   // Implement proper loading states with shimmer effects
+   // Add offline support with local caching (Hive or shared preferences)
+   // Implement data refresh functionality with pull-to-refresh
+   // Add search state management with debouncing
+   // Implement category filtering and sorting
+   // Add favorite items functionality
+   // Implement dietary preference filtering
+   ```
+
+4. Create robust API service:
+   ```dart
+   // Implement Dio-based HTTP client with proper configuration
+   // Add request/response transformers for data mapping
+   // Implement retry logic with exponential backoff
+   // Add request cancellation and timeout handling
+   // Implement proper error mapping to user-friendly messages
+   // Add network connectivity monitoring
+   // Implement request/response logging for debugging
+   ```
+
+**Success Criteria:**
+- ✅ Menu data loads successfully from backend with all details
+- ✅ Restaurant branding displays correctly with theming
+- ✅ Categories and items show with complete information
+- ✅ Search functionality works with filters and sorting
+- ✅ Error states handled gracefully with user-friendly messages
+- ✅ Performance optimized with caching and lazy loading
+- ✅ Offline mode works with cached data
+
+### Task 4: Complete Cart System Implementation (CRITICAL)
+**Priority:** BLOCKER
+**Backend Files:**
+- `apps/backend/app/features/cart/presentation/cart_router.py` (enhance existing)
+- `apps/backend/app/features/cart/application/cart_use_cases.py`
+- `apps/backend/app/features/cart/infrastructure/cart_repos_impl.py`
+
+**Frontend Files:**
+- `apps/frontend/lib/features/diner/application/controllers/cart_controller.dart` (complete rewrite)
+- `apps/frontend/lib/features/diner/presentation/screens/cart_screen.dart`
+- `apps/frontend/lib/features/diner/presentation/widgets/cart_widgets/`
+
+**Backend Actions:**
+1. Enhance cart schema with additional features:
+   ```sql
+   ALTER TABLE cart_sessions ADD COLUMN device_info JSONB DEFAULT '{}';
+   ALTER TABLE cart_sessions ADD COLUMN location_data JSONB DEFAULT '{}';
+   ALTER TABLE cart_sessions ADD COLUMN promo_code_id UUID REFERENCES promo_codes(id);
+   ALTER TABLE cart_sessions ADD COLUMN discount_amount DECIMAL(10,2) DEFAULT 0;
+   ALTER TABLE cart_sessions ADD COLUMN special_requests TEXT;
+
+   ALTER TABLE cart_items ADD COLUMN customization_data JSONB DEFAULT '{}';
+   ALTER TABLE cart_items ADD COLUMN special_instructions TEXT;
+   ALTER TABLE cart_items ADD COLUMN estimated_preparation_time INTEGER;
+   ```
+
+2. Enhance cart API endpoints:
+   ```python
+   # Enhanced cart session management
+   # POST /api/v1/cart/sessions - Create cart session with device info
+   # GET /api/v1/cart/sessions/{session_token} - Get cart with real-time pricing
+   # PUT /api/v1/cart/sessions/{session_token} - Update cart session info
+   # DELETE /api/v1/cart/sessions/{session_token} - Clear cart session
+
+   # Advanced cart item management
+   # POST /api/v1/cart/items - Add item with customization
+   # PUT /api/v1/cart/items/{item_id} - Update item quantity and customization
+   # DELETE /api/v1/cart/items/{item_id} - Remove item from cart
+   # POST /api/v1/cart/bulk-operations - Bulk add/remove items
+
+   # Cart analytics and recommendations
+   # GET /api/v1/cart/recommendations - Get recommended items
+   # GET /api/v1/cart/analytics - Get cart usage statistics
+   ```
+
+3. Implement cart business logic:
+   ```python
+   # Real-time price validation against menu
+   # Stock availability checking
+   # Customization validation and pricing
+   # Promo code validation and application
+   # Minimum order amount validation
+   # Delivery fee calculation based on location
+   # Tax calculation based on restaurant settings
+   # Session migration for authenticated users
+   # Cart abandonment recovery
+   ```
+
+**Frontend Actions:**
+1. Complete cart controller rewrite:
+   ```dart
+   // Backend API integration with real-time sync
+   // Session persistence and migration
+   // Price validation and updates
+   // Customization support
+   // Promo code application
+   // Quantity management with stock validation
+   // Special instructions handling
+   // Order amount validation
+   // Cart sharing functionality
+   // Abandoned cart recovery
+   ```
+
+2. Create comprehensive cart UI components:
+   ```dart
+   // Cart screen with item list and pricing
+   // Cart item cards with customization options
+   // Quantity selectors with stock validation
+   // Special instructions input
+   // Promo code input and validation
+   // Order summary with tax and fee breakdown
+   // Checkout button with validation
+   // Empty cart state with recommendations
+   // Loading and error states
+   ```
+
+3. Implement cart-backend synchronization:
+   ```dart
+   // Real-time cart sync with backend
+   // Conflict resolution for concurrent changes
+   // Offline mode with local persistence
+   // Optimistic updates with rollback on error
+   // Session restoration on app restart
+   // Cross-device cart synchronization
+   ```
+
+**Success Criteria:**
+- ✅ Users can add items to cart with full customization
+- ✅ Cart persists across app restarts and devices
+- ✅ Real-time price validation and updates
+- ✅ Promo code and discount application works
+- ✅ Special instructions and dietary preferences supported
+- ✅ Cart syncs seamlessly with backend
+- ✅ Offline mode works with local persistence
+
+### Task 5: Complete Order Placement Flow Implementation (CRITICAL)
+**Priority:** BLOCKER
+**Backend Files:**
+- `apps/backend/app/features/orders/presentation/order_router.py` (enhance existing)
+- `apps/backend/app/features/payment/presentation/payment_router.py`
+- `apps/backend/app/features/order_tracking/presentation/order_tracking_router.py`
+
+**Frontend Files:**
+- `apps/frontend/lib/features/diner/presentation/screens/checkout_screen.dart`
+- `apps/frontend/lib/features/diner/presentation/screens/payment_screen.dart`
+- `apps/frontend/lib/features/diner/presentation/screens/order_confirmation_screen.dart`
+- `apps/frontend/lib/features/diner/presentation/screens/order_tracking_screen.dart`
+
+**Backend Actions:**
+1. Enhance order schema:
+   ```sql
+   ALTER TABLE orders ADD COLUMN customer_info JSONB DEFAULT '{}';
+   ALTER TABLE orders ADD COLUMN delivery_info JSONB DEFAULT '{}';
+   ALTER TABLE orders ADD COLUMN payment_info JSONB DEFAULT '{}';
+   ALTER TABLE orders ADD COLUMN promo_info JSONB DEFAULT '{}';
+   ALTER TABLE orders ADD COLUMN estimated_delivery_time TIMESTAMPTZ;
+   ALTER TABLE orders ADD COLUMN actual_delivery_time TIMESTAMPTZ;
+   ALTER TABLE orders ADD COLUMN delivery_partner_id UUID;
+   ALTER TABLE orders ADD COLUMN rating INTEGER CHECK (rating >= 1 AND rating <= 5);
+   ALTER TABLE orders ADD COLUMN review TEXT;
+   ALTER TABLE orders ADD COLUMN feedback_data JSONB DEFAULT '{}';
+
+   CREATE TABLE order_status_history (
+       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+       order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+       status VARCHAR(50) NOT NULL,
+       previous_status VARCHAR(50),
+       changed_by UUID REFERENCES auth.users(id),
+       changed_at TIMESTAMPTZ DEFAULT NOW(),
+       notes TEXT,
+       estimated_completion_time TIMESTAMPTZ
+   );
+   ```
+
+2. Implement comprehensive order API:
+   ```python
+   # Order creation and management
+   # POST /api/v1/orders - Create order from cart
+   # GET /api/v1/orders/{order_id} - Get complete order details
+   # PUT /api/v1/orders/{order_id} - Update order information
+   # DELETE /api/v1/orders/{order_id}/cancel - Cancel order
+   # GET /api/v1/orders/restaurant/{restaurant_id} - Get restaurant orders
+   # GET /api/v1/orders/customer/{customer_id} - Get customer orders
+   # GET /api/v1/orders/session/{session_id} - Get session orders
+
+   # Order status management
+   # PUT /api/v1/orders/{order_id}/status - Update order status
+   # GET /api/v1/orders/{order_id}/status-history - Get status history
+   # POST /api/v1/orders/{order_id}/estimate-delivery - Get delivery estimate
+
+   # Order analytics and reporting
+   # GET /api/v1/orders/analytics/restaurant/{restaurant_id} - Restaurant analytics
+   # GET /api/v1/orders/analytics/customer/{customer_id} - Customer analytics
+   ```
+
+3. Implement payment integration:
+   ```python
+   # Razorpay integration
+   # POST /api/v1/payment/create-order - Create Razorpay order
+   # POST /api/v1/payment/verify - Verify payment signature
+   # POST /api/v1/payment/webhook - Handle Razorpay webhooks
+   # GET /api/v1/payment/status/{payment_id} - Get payment status
+   # POST /api/v1/payment/refund - Initiate refund
+   # GET /api/v1/payment/refunds/{order_id} - Get refund status
+
+   # Payment processing business logic
+   # Payment validation and fraud detection
+   # Payment failure handling and retry logic
+   # Refund processing and policies
+   ```
+
+4. Implement real-time order tracking:
+   ```python
+   # WebSocket integration for real-time updates
+   # Order status change events
+   # Kitchen display system integration
+   # Delivery partner tracking
+   # Customer notifications
+   # ETA calculations and updates
+   ```
+
+**Frontend Actions:**
+1. Create complete checkout flow:
+   ```dart
+   // Checkout screen with:
+   // - Order summary and item review
+   // - Customer information form
+   // - Delivery address selection/management
+   // - Payment method selection
+   // - Special instructions
+   // - Promo code application
+   // - Price breakdown with taxes and fees
+   // - Place order button with validation
+
+   // Payment screen with:
+   // - Razorpay integration
+   // - Payment form validation
+   // - Payment processing indicators
+   // - Success/failure handling
+   // - Digital receipt generation
+
+   // Order confirmation screen with:
+   // - Order details and summary
+   // - Estimated preparation/delivery time
+   // - Real-time status updates
+   // - Order tracking options
+   // - Rating and review system
+   // - Share functionality
+   // - Reorder button
+   ```
+
+2. Implement order tracking:
+   ```dart
+   // Real-time order status updates
+   // WebSocket integration for live updates
+   // Order progress visualization
+   // ETA display and updates
+   - Delivery partner tracking
+   // Push notification integration
+   // Order history management
+   // Rating and review system
+   // Feedback collection
+   ```
+
+3. Add payment integration:
+   ```dart
+   // Razorpay SDK integration
+   // Payment form validation
+   // Payment success/failure handling
+   // Receipt generation and sharing
+   // Payment history management
+   // Refund request handling
+   ```
+
+**Success Criteria:**
+- ✅ Users can place complete orders from cart
+- ✅ Payment integration works seamlessly with Razorpay
+- ✅ Real-time order status updates and tracking
+- ✅ Order history and management functionality
+- ✅ Rating and review system works
+- ✅ Digital receipt generation and sharing
+- ✅ Push notifications for order updates
+
+### Task 6: Real-time Features Implementation (HIGH)
+**Priority:** HIGH
+**Files:**
+- `apps/backend/app/features/realtime/` (create new feature)
+- `apps/frontend/lib/features/realtime/` (create new feature)
+- `apps/backend/app/core/websocket_manager.py`
+
+**Backend Actions:**
+1. Implement WebSocket server:
+   ```python
+   # WebSocket connection management
+   # Authentication and authorization
+   # Room-based channel management (restaurants, orders, users)
+   # Message broadcasting and targeting
+   # Connection health monitoring
+   # Reconnection logic
+   # Message persistence for offline users
+   ```
+
+2. Create real-time event system:
+   ```python
+   # Order status change events
+   # Payment status events
+   # Restaurant notifications
+   # Customer notifications
+   # Kitchen display events
+   # Delivery partner events
+   # System alert events
+   ```
+
+3. Implement push notification system:
+   ```python
+   # FCM integration for Android
+   # APNS integration for iOS
+   // Web push notifications
+   // Notification templates and personalization
+   // Notification scheduling and throttling
+   // Notification analytics and reporting
+   ```
+
+**Frontend Actions:**
+1. Create real-time service:
+   ```dart
+   // WebSocket connection management
+   // Authentication and reconnection
+   // Room subscription management
+   // Message handling and routing
+   // Connection state management
+   // Offline message persistence
+   // Background connection management
+   ```
+
+2. Implement real-time controllers:
+   ```dart
+   // Order status controller
+   // Payment status controller
+   // Restaurant notification controller
+   // Kitchen display controller
+   // Delivery tracking controller
+   ```
+
+3. Create notification system:
+   ```dart
+   // Local notification integration
+   // Push notification handling
+   // In-app notification display
+   // Notification preferences management
+   // Notification history and management
+   ```
+
+**Success Criteria:**
+- ✅ Real-time order status updates work
+- ✅ Push notifications delivered successfully
+- ✅ Kitchen display system shows real-time orders
+- ✅ Delivery tracking updates in real-time
+- ✅ Restaurant staff receive instant notifications
+- ✅ WebSocket connections stable under load
+
+### Task 7: Customer Account Management (MEDIUM)
+**Priority:** MEDIUM
+**Files:**
+- `apps/backend/app/features/customers/` (enhance existing)
+- `apps/frontend/lib/features/customer/` (create new feature)
+
+**Backend Actions:**
+1. Enhance customer schema:
+   ```sql
+   ALTER TABLE customers ADD COLUMN profile_image_url TEXT;
+   ALTER TABLE customers ADD COLUMN date_of_birth DATE;
+   ALTER TABLE customers ADD COLUMN gender VARCHAR(20);
+   ALTER TABLE customers ADD COLUMN preferences JSONB DEFAULT '{}';
+   ALTER TABLE customers ADD COLUMN addresses JSONB DEFAULT '[]';
+   ALTER TABLE customers ADD COLUMN payment_methods JSONB DEFAULT '[]';
+   ALTER TABLE customers ADD COLUMN favorite_items UUID[] DEFAULT '{}';
+   ALTER TABLE customers ADD COLUMN favorite_restaurants UUID[] DEFAULT '{}';
+   ALTER TABLE customers ADD COLUMN order_stats JSONB DEFAULT '{}';
+   ALTER TABLE customers ADD COLUMN notification_preferences JSONB DEFAULT '{}';
+   ALTER TABLE customers ADD COLUMN privacy_settings JSONB DEFAULT '{}';
+   ALTER TABLE customers ADD COLUMN is_verified BOOLEAN DEFAULT false;
+   ALTER TABLE customers ADD COLUMN verification_token TEXT;
+   ALTER TABLE customers ADD COLUMN last_login TIMESTAMPTZ;
+   ALTER TABLE customers ADD COLUMN login_count INTEGER DEFAULT 0;
+   ```
+
+2. Implement customer API:
+   ```python
+   # Customer profile management
+   # Address book management
+   # Payment method management
+   # Favorite items and restaurants
+   # Order history and tracking
+   # Preferences and settings
+   # Notification preferences
+   // Privacy settings
+   // Account verification
+   // Password management
+   ```
+
+**Frontend Actions:**
+1. Create customer feature:
+   ```dart
+   // Customer registration and login
+   // Profile management screen
+   // Address book management
+   // Payment method management
+   // Order history screen
+   // Favorite items and restaurants
+   // Preferences and settings
+   // Notification preferences
+   // Privacy settings
+   ```
+
+**Success Criteria:**
+- ✅ Customer registration and login works
+- ✅ Profile management with all fields
+- ✅ Address book functionality
+- ✅ Payment method storage
+- ✅ Order history and tracking
+- ✅ Favorite items and restaurants
+- ✅ Preferences and notification settings
+
+### Task 8: Search and Filter Implementation (MEDIUM)
+**Priority:** MEDIUM
+**Files:**
+- `apps/backend/app/features/public_menu/application/use_cases/search_menu_items.py` (enhance)
+- `apps/frontend/lib/features/diner/application/controllers/search_controller.dart`
+
+**Backend Actions:**
+1. Enhance search functionality:
+   ```python
+   # Advanced search with multiple criteria
+   # Full-text search with relevance scoring
+   # Filter by dietary preferences
+   // Filter by price range
+   // Filter by spice level
+   // Filter by preparation time
+   // Sort by relevance, price, rating, popularity
+   // Search suggestions and autocomplete
+   // Search analytics and trending
+   ```
+
+**Frontend Actions:**
+1. Create search interface:
+   ```dart
+   // Search bar with suggestions
+   // Advanced search filters
+   // Search results display
+   // Search history and recent searches
+   // Filter chips and controls
+   // Sort options
+   // Search results pagination
+   // Clear search functionality
+   ```
+
+**Success Criteria:**
+- ✅ Search works across all menu item fields
+- ✅ Filters work for dietary preferences, price, etc.
+- ✅ Sort options work correctly
+- ✅ Search suggestions and autocomplete work
+- ✅ Search history and recent searches work
+
+### Task 9: Performance Optimization (MEDIUM)
+**Priority:** MEDIUM
+**Files:**
+- `apps/backend/app/core/database.py` (enhance)
+- `apps/backend/app/core/cache.py` (create)
+- `apps/frontend/lib/core/performance/` (create)
+
+**Backend Actions:**
+1. Database optimization:
+   ```python
+   // Query optimization and indexing
+   // Connection pooling configuration
+   // Read replicas for scaling
+   // Query result caching
+   // Database monitoring and optimization
+   ```
+
+2. Implement caching:
+   ```python
+   // Redis caching for frequently accessed data
+   // CDN integration for static assets
+   // Browser cache headers
+   // Application-level caching
+   // Cache invalidation strategies
+   ```
+
+**Frontend Actions:**
+1. Implement performance optimizations:
+   ```dart
+   // Lazy loading for images and lists
+   // Infinite scroll for large datasets
+   // Image optimization and compression
+   // Code splitting and lazy loading
+   // Minimize re-renders and optimize widgets
+   // Implement proper state management
+   // Add performance monitoring
+   ```
+
+**Success Criteria:**
+- ✅ Menu loads in < 2 seconds
+- ✅ Cart operations < 500ms
+- ✅ Search results < 1 second
+- ✅ Images load progressively
+- ✅ App works smoothly on 2G/3G
+- ✅ Memory usage optimized
+
+### Task 10: Accessibility Implementation (LOW)
+**Priority:** LOW
+**Files:**
+- `apps/frontend/lib/core/accessibility/` (create)
+- `apps/frontend/lib/shared/widgets/accessible_widgets.dart`
+
+**Actions:**
+1. Implement accessibility features:
+   ```dart
+   // Screen reader support with semantic labels
+   // Keyboard navigation and focus management
+   // High contrast mode support
+   // Text scaling and dynamic type
+   // Color blind friendly design
+   // Reduce motion support
+   // Accessibility testing and validation
+   ```
+
+**Success Criteria:**
+- ✅ WCAG 2.1 AA compliance
+- ✅ Screen reader works correctly
+- // Keyboard navigation complete
+- // High contrast mode available
+- // Text scaling works
+- // Accessibility tests pass
+
+## 🎯 Expected Deliverables
+
+### 1. Complete Database Schema
+- All required tables with comprehensive structure
+- Proper relationships and constraints
+- Complete RLS policies for security
+- Performance indexes for optimization
+- Sample data for testing
+
+### 2. Enhanced Backend API
+- Complete public menu API with all features
+- Sophisticated cart management system
+- Comprehensive order processing
+- Payment integration with Razorpay
+- Real-time updates and notifications
+- Customer management system
+- Advanced search and filtering
+
+### 3. Production-Ready Frontend
+- Complete menu browsing experience
+- Advanced cart with customization
+- Full checkout and payment flow
+- Order tracking and management
+- Customer account features
+- Search and filtering capabilities
+- Real-time updates and notifications
+
+### 4. Performance Optimization
+- Database query optimization
+- Comprehensive caching strategy
+- Image optimization and lazy loading
+- Efficient state management
+- Memory usage optimization
+- Network request optimization
+
+### 5. Accessibility Compliance
+- WCAG 2.1 AA compliance
+- Screen reader support
+- Keyboard navigation
+- High contrast mode
+- Text scaling support
+- Accessibility testing
+
+## 📋 Final Success Criteria
+
+### Core Functionality:
+✅ Users can browse restaurant menus by QR code or restaurant code
+✅ Users can add items to cart with full customization options
+✅ Users can place orders with payment processing
+✅ Users can track orders in real-time
+✅ Users can manage customer accounts and order history
+✅ Users can search and filter menu items effectively
+✅ Restaurant staff can manage orders and update status
+✅ System works offline with proper synchronization
+
+### Technical Quality:
+✅ Database schema properly designed with all required features
+✅ Backend API follows REST principles with comprehensive features
+✅ Frontend implementation follows clean architecture patterns
+✅ Security best practices implemented throughout
+✅ Performance optimized for production scale
+✅ Complete test coverage with automated testing
+✅ Real-time features working seamlessly
+✅ Accessibility compliance achieved
+
+### User Experience:
+✅ Seamless user experience from menu discovery to order completion
+✅ Fast loading times and responsive interactions (< 2 seconds)
+✅ Beautiful UI that works on all devices with proper theming
+✅ Comprehensive error handling and user feedback
+✅ Real-time updates and notifications
+✅ Accessibility features for all users
+✅ Offline functionality for poor network conditions
+
+### Production Readiness:
+✅ No hardcoded credentials or development bypasses
+✅ Proper logging and monitoring implemented
+✅ Security vulnerabilities addressed and tested
+✅ Performance benchmarks met and validated
+✅ Complete documentation provided
+✅ Deployment and scaling considerations addressed
+✅ Customer support features implemented
+
+## 🔍 Additional Considerations
+
+### Security Requirements:
+- Implement proper authentication and authorization for all features
+- Use HTTPS for all communications with proper certificate management
+- Validate all user inputs with comprehensive sanitization
+- Implement rate limiting for all public APIs and features
+- Proper session management with secure token handling
+- Secure payment processing with PCI compliance
+- Data encryption for sensitive information at rest and in transit
+- Regular security audits and penetration testing
+
+### Performance Targets:
+- Menu loading time: < 2 seconds
+- Cart operations: < 500ms response time
+- Order placement: < 3 seconds
+- Search results: < 1 second
+- Real-time updates: < 100ms latency
+- Image loading: Progressive loading with lazy loading
+- Support 10,000+ concurrent users
+- Work on 2G/3G networks with < 5 second load times
+
+### Accessibility Requirements:
+- WCAG 2.1 AA compliance throughout the application
+- Proper color contrast ratios (minimum 4.5:1 for normal text)
+- Screen reader support with proper ARIA labels and semantic HTML
+- Keyboard navigation for all interactive elements
+- Text scaling support up to 200%
+- Reduce motion support for users with vestibular disorders
+- Focus management and visible focus indicators
+- Accessibility testing with both automated tools and manual testing
+
+### Internationalization Considerations:
+- Multi-language support for restaurant menus and interfaces
+- Currency and number formatting for different regions
+- Date and time formatting for different locales
+- Right-to-left language support
+- Cultural adaptation of UI elements and features
+- Local payment method integration
+- Regional dietary preference support
+
+This comprehensive implementation plan will transform the current incomplete diner view into a fully functional, production-ready restaurant ordering platform that can compete with the best solutions in the market.

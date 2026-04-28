@@ -1,0 +1,722 @@
+**Task: Implement Customer Dashboard with Order History and Account Management**
+
+**Objective**: Create a comprehensive customer dashboard for the ZERGO QR platform featuring order history, favorites, loyalty points, account management, and personalized recommendations with real-time updates and responsive design.
+
+**Phase 1: Dashboard Architecture**
+
+1. **Customer Dashboard Controller**:
+   ```dart
+   // apps/frontend/lib/features/customer/presentation/controllers/dashboard_controller.dart
+   class CustomerDashboardController extends GetxController {
+     final ApiService _apiService = ApiService.instance;
+     final AuthService _authService = AuthService.instance;
+     
+     final RxList<Order> _recentOrders = <Order>[].obs;
+     final RxList<Restaurant> _favoriteRestaurants = <Restaurant>[].obs;
+     final RxList<MenuItem> _favoriteItems = <MenuItem>[].obs;
+     final Rx<CustomerStats> _customerStats = CustomerStats.empty().obs;
+     final RxBool _isLoading = false.obs;
+     final RxBool _isRefreshing = false.obs;
+     
+     List<Order> get recentOrders => _recentOrders;
+     List<Restaurant> get favoriteRestaurants => _favoriteRestaurants;
+     List<MenuItem> get favoriteItems => _favoriteItems;
+     CustomerStats get customerStats => _customerStats.value;
+     bool get isLoading => _isLoading.value;
+     bool get isRefreshing => _isRefreshing.value;
+     
+     @override
+     void onInit() {
+       super.onInit();
+       _loadDashboardData();
+       _setupRealTimeUpdates();
+     }
+     
+     Future<void> _loadDashboardData() async {
+       try {
+         _isLoading.value = true;
+         
+         await Future.wait([
+           _loadRecentOrders(),
+           _loadFavoriteRestaurants(),
+           _loadFavoriteItems(),
+           _loadCustomerStats(),
+         ]);
+         
+       } catch (e) {
+         _handleError('Failed to load dashboard data', e);
+       } finally {
+         _isLoading.value = false;
+       }
+     }
+     
+     Future<void> refreshDashboard() async {
+       try {
+         _isRefreshing.value = true;
+         await _loadDashboardData();
+       } finally {
+         _isRefreshing.value = false;
+       }
+     }
+     
+     Future<void> _loadRecentOrders() async {
+       final response = await _apiService.get(
+         '/customer/orders',
+         queryParameters: {
+           'limit': 10,
+           'include_details': true,
+         },
+       );
+       
+       if (response.isSuccess) {
+         _recentOrders.value = (response.data['orders'] as List)
+             .map((json) => Order.fromJson(json))
+             .toList();
+       }
+     }
+     
+     Future<void> _loadFavoriteRestaurants() async {
+       final response = await _apiService.get('/customer/favorites/restaurants');
+       
+       if (response.isSuccess) {
+         _favoriteRestaurants.value = (response.data['restaurants'] as List)
+             .map((json) => Restaurant.fromJson(json))
+             .toList();
+       }
+     }
+     
+     Future<void> _loadFavoriteItems() async {
+       final response = await _apiService.get('/customer/favorites/items');
+       
+       if (response.isSuccess) {
+         _favoriteItems.value = (response.data['items'] as List)
+             .map((json) => MenuItem.fromJson(json))
+             .toList();
+       }
+     }
+     
+     Future<void> _loadCustomerStats() async {
+       final response = await _apiService.get('/customer/stats');
+       
+       if (response.isSuccess) {
+         _customerStats.value = CustomerStats.fromJson(response.data);
+       }
+     }
+     
+     void _setupRealTimeUpdates() {
+       // Listen for order status updates
+       NotificationService.instance.onOrderUpdate.listen((orderUpdate) {
+         _updateOrderInList(orderUpdate);
+       });
+       
+       // Listen for loyalty point updates
+       NotificationService.instance.onLoyaltyUpdate.listen((loyaltyUpdate) {
+         _updateLoyaltyPoints(loyaltyUpdate);
+       });
+     }
+     
+     void _updateOrderInList(OrderUpdate update) {
+       final index = _recentOrders.indexWhere((order) => order.id == update.orderId);
+       if (index != -1) {
+         _recentOrders[index] = _recentOrders[index].copyWith(
+           status: update.status,
+           updatedAt: update.updatedAt,
+         );
+       }
+     }
+     
+     void _updateLoyaltyPoints(LoyaltyUpdate update) {
+       _customerStats.value = _customerStats.value.copyWith(
+         loyaltyPoints: update.newBalance,
+       );
+     }
+     
+     Future<void> toggleRestaurantFavorite(String restaurantId) async {
+       try {
+         final isFavorite = _favoriteRestaurants.any((r) => r.id == restaurantId);
+         
+         final response = await _apiService.post(
+           '/customer/favorites/restaurants/${isFavorite ? 'remove' : 'add'}',
+           data: {'restaurant_id': restaurantId},
+         );
+         
+         if (response.isSuccess) {
+           if (isFavorite) {
+             _favoriteRestaurants.removeWhere((r) => r.id == restaurantId);
+           } else {
+             await _loadFavoriteRestaurants(); // Reload to get full data
+           }
+           
+           SnackbarService.showSuccess(
+             isFavorite ? 'Removed from favorites' : 'Added to favorites',
+           );
+         }
+       } catch (e) {
+         _handleError('Failed to update favorites', e);
+       }
+     }
+     
+     Future<void> toggleItemFavorite(String itemId) async {
+       try {
+         final isFavorite = _favoriteItems.any((item) => item.id == itemId);
+         
+         final response = await _apiService.post(
+           '/customer/favorites/items/${isFavorite ? 'remove' : 'add'}',
+           data: {'item_id': itemId},
+         );
+         
+         if (response.isSuccess) {
+           if (isFavorite) {
+             _favoriteItems.removeWhere((item) => item.id == itemId);
+           } else {
+             await _loadFavoriteItems(); // Reload to get full data
+           }
+           
+           SnackbarService.showSuccess(
+             isFavorite ? 'Removed from favorites' : 'Added to favorites',
+           );
+         }
+       } catch (e) {
+         _handleError('Failed to update favorites', e);
+       }
+     }
+     
+     void navigateToOrderDetails(String orderId) {
+       Get.toNamed('/orders/$orderId');
+     }
+     
+     void navigateToRestaurant(String restaurantId) {
+       Get.toNamed('/restaurants/$restaurantId');
+     }
+     
+     void navigateToOrderHistory() {
+       Get.toNamed('/orders');
+     }
+     
+     void navigateToProfile() {
+       Get.toNamed('/profile');
+     }
+     
+     void navigateToLoyalty() {
+       Get.toNamed('/loyalty');
+     }
+     
+     void _handleError(String message, dynamic error) {
+       logger.error('Dashboard Error: $message', error);
+       SnackbarService.showError(message);
+     }
+   }
+   ```
+
+2. **Customer Stats Model**:
+   ```dart
+   // apps/frontend/lib/features/customer/models/customer_stats.dart
+   class CustomerStats {
+     final int totalOrders;
+     final double totalSpent;
+     final int loyaltyPoints;
+     final int favoriteRestaurants;
+     final int favoriteItems;
+     final double averageOrderValue;
+     final String memberSince;
+     final CustomerTier tier;
+     final List<Achievement> achievements;
+     
+     const CustomerStats({
+       required this.totalOrders,
+       required this.totalSpent,
+       required this.loyaltyPoints,
+       required this.favoriteRestaurants,
+       required this.favoriteItems,
+       required this.averageOrderValue,
+     required this.memberSince,
+       required this.tier,
+       required this.achievements,
+     });
+     
+     factory CustomerStats.empty() {
+       return CustomerStats(
+         totalOrders: 0,
+         totalSpent: 0.0,
+         loyaltyPoints: 0,
+         favoriteRestaurants: 0,
+         favoriteItems: 0,
+         averageOrderValue: 0.0,
+         memberSince: '',
+         tier: CustomerTier.bronze,
+         achievements: [],
+       );
+     }
+     
+     factory CustomerStats.fromJson(Map<String, dynamic> json) {
+       return CustomerStats(
+         totalOrders: json['total_orders'] ?? 0,
+         totalSpent: (json['total_spent'] ?? 0).toDouble(),
+         loyaltyPoints: json['loyalty_points'] ?? 0,
+         favoriteRestaurants: json['favorite_restaurants'] ?? 0,
+         favoriteItems: json['favorite_items'] ?? 0,
+         averageOrderValue: (json['average_order_value'] ?? 0).toDouble(),
+         memberSince: json['member_since'] ?? '',
+         tier: CustomerTier.fromString(json['tier'] ?? 'bronze'),
+         achievements: (json['achievements'] as List? ?? [])
+             .map((json) => Achievement.fromJson(json))
+             .toList(),
+       );
+     }
+     
+     CustomerStats copyWith({
+       int? totalOrders,
+       double? totalSpent,
+       int? loyaltyPoints,
+       int? favoriteRestaurants,
+       int? favoriteItems,
+       double? averageOrderValue,
+       String? memberSince,
+       CustomerTier? tier,
+       List<Achievement>? achievements,
+     }) {
+       return CustomerStats(
+         totalOrders: totalOrders ?? this.totalOrders,
+         totalSpent: totalSpent ?? this.totalSpent,
+         loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
+         favoriteRestaurants: favoriteRestaurants ?? this.favoriteRestaurants,
+         favoriteItems: favoriteItems ?? this.favoriteItems,
+         averageOrderValue: averageOrderValue ?? this.averageOrderValue,
+         memberSince: memberSince ?? this.memberSince,
+         tier: tier ?? this.tier,
+         achievements: achievements ?? this.achievements,
+       );
+     }
+   }
+   
+   enum CustomerTier {
+     bronze,
+     silver,
+     gold,
+     platinum;
+     
+     static CustomerTier fromString(String value) {
+       return CustomerTier.values.firstWhere(
+         (tier) => tier.name.toLowerCase() == value.toLowerCase(),
+         orElse: () => CustomerTier.bronze,
+       );
+     }
+     
+     Color get color {
+       switch (this) {
+         case CustomerTier.bronze:
+           return Colors.brown;
+         case CustomerTier.silver:
+           return Colors.grey;
+         case CustomerTier.gold:
+           return Colors.amber;
+         case CustomerTier.platinum:
+           return Colors.cyan;
+       }
+     }
+     
+     String get displayName {
+       return name.substring(0, 1).toUpperCase() + name.substring(1);
+     }
+   }
+   ```
+
+**Phase 2: Dashboard UI Components**
+
+1. **Main Dashboard Screen**:
+   ```dart
+   // apps/frontend/lib/features/customer/presentation/screens/dashboard_screen.dart
+   class CustomerDashboardScreen extends StatelessWidget {
+     final CustomerDashboardController _controller = Get.put(CustomerDashboardController());
+     
+     @override
+     Widget build(BuildContext context) {
+       return Scaffold(
+         appBar: _buildAppBar(context),
+         body: Obx(() {
+           if (_controller.isLoading) {
+             return _buildLoadingState();
+           }
+           
+           return RefreshIndicator(
+             onRefresh: _controller.refreshDashboard,
+             child: SingleChildScrollView(
+               physics: AlwaysScrollableScrollPhysics(),
+               padding: AppSpacing.allMedium,
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   _buildWelcomeHeader(context),
+                   SizedBox(height: AppSpacing.large),
+                   _buildStatsCards(context),
+                   SizedBox(height: AppSpacing.large),
+                   _buildQuickActions(context),
+                   SizedBox(height: AppSpacing.large),
+                   _buildRecentOrders(context),
+                   SizedBox(height: AppSpacing.large),
+                   _buildFavoriteRestaurants(context),
+                   SizedBox(height: AppSpacing.large),
+                   _buildFavoriteItems(context),
+                   SizedBox(height: AppSpacing.extraLarge),
+                 ],
+               ),
+             ),
+           );
+         }),
+       );
+     }
+     
+     PreferredSizeWidget _buildAppBar(BuildContext context) {
+       return AppBar(
+         title: Text('Dashboard'),
+         actions: [
+           IconButton(
+             onPressed: _controller.navigateToProfile,
+             icon: CircleAvatar(
+               radius: 16,
+               backgroundImage: AuthService.instance.currentUser?.profileImageUrl != null
+                   ? NetworkImage(AuthService.instance.currentUser!.profileImageUrl!)
+                   : null,
+               child: AuthService.instance.currentUser?.profileImageUrl == null
+                   ? Icon(Icons.person, size: 20)
+                   : null,
+             ),
+           ),
+           SizedBox(width: AppSpacing.medium),
+         ],
+       );
+     }
+     
+     Widget _buildWelcomeHeader(BuildContext context) {
+       final user = AuthService.instance.currentUser;
+       final stats = _controller.customerStats;
+       
+       return EnhancedCard(
+         gradient: LinearGradient(
+           colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)],
+           begin: Alignment.topLeft,
+           end: Alignment.bottomRight,
+         ),
+         child: Padding(
+           padding: AppSpacing.allLarge,
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               Row(
+                 children: [
+                   Expanded(
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Text(
+                           'Welcome back,',
+                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                             color: Colors.white.withOpacity(0.9),
+                           ),
+                         ),
+                         Text(
+                           user?.fullName ?? 'Guest',
+                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                             color: Colors.white,
+                             fontWeight: FontWeight.bold,
+                           ),
+                         ),
+                       ],
+                     ),
+                   ),
+                   Container(
+                     padding: EdgeInsets.symmetric(
+                       horizontal: AppSpacing.medium,
+                       vertical: AppSpacing.small,
+                     ),
+                     decoration: BoxDecoration(
+                       color: stats.tier.color,
+                       borderRadius: BorderRadius.circular(20),
+                     ),
+                     child: Row(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         Icon(
+                           Icons.star,
+                           size: 16,
+                           color: Colors.white,
+                         ),
+                         SizedBox(width: AppSpacing.small),
+                         Text(
+                           stats.tier.displayName,
+                           style: TextStyle(
+                             color: Colors.white,
+                             fontWeight: FontWeight.w600,
+                           ),
+                         ),
+                       ],
+                     ),
+                   ),
+                 ],
+               ),
+               SizedBox(height: AppSpacing.medium),
+               Row(
+                 children: [
+                   Icon(
+                     Icons.loyalty,
+                     color: Colors.white,
+                     size: 20,
+                   ),
+                   SizedBox(width: AppSpacing.small),
+                   Text(
+                     '${stats.loyaltyPoints} Points',
+                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                       color: Colors.white,
+                       fontWeight: FontWeight.w600,
+                     ),
+                   ),
+                   Spacer(),
+                   TextButton(
+                     onPressed: _controller.navigateToLoyalty,
+                     child: Text(
+                       'View Details',
+                       style: TextStyle(color: Colors.white),
+                     ),
+                   ),
+                 ],
+               ),
+             ],
+           ),
+         ),
+       );
+     }
+     
+     Widget _buildStatsCards(BuildContext context) {
+       final stats = _controller.customerStats;
+       
+       return GridView.count(
+         crossAxisCount: 2,
+         shrinkWrap: true,
+         physics: NeverScrollableScrollPhysics(),
+         childAspectRatio: 1.3,
+         crossAxisSpacing: AppSpacing.medium,
+         mainAxisSpacing: AppSpacing.medium,
+         children: [
+           _buildStatCard(
+             context,
+             icon: Icons.shopping_bag,
+             title: 'Total Orders',
+             value: stats.totalOrders.toString(),
+             color: Colors.blue,
+           ),
+           _buildStatCard(
+             context,
+             icon: Icons.currency_rupee,
+             title: 'Total Spent',
+             value: '₹${stats.totalSpent.toStringAsFixed(0)}',
+             color: Colors.green,
+           ),
+           _buildStatCard(
+             context,
+             icon: Icons.favorite,
+             title: 'Favorites',
+             value: stats.favoriteRestaurants.toString(),
+             color: Colors.red,
+           ),
+           _buildStatCard(
+             context,
+             icon: Icons.trending_up,
+             title: 'Avg Order',
+             value: '₹${stats.averageOrderValue.toStringAsFixed(0)}',
+             color: Colors.orange,
+           ),
+         ],
+       );
+     }
+     
+     Widget _buildStatCard(
+       BuildContext context, {
+       required IconData icon,
+       required String title,
+       required String value,
+       required Color color,
+     }) {
+       return EnhancedCard(
+         child: Padding(
+           padding: AppSpacing.allMedium,
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               Container(
+                 padding: EdgeInsets.all(AppSpacing.small),
+                 decoration: BoxDecoration(
+                   color: color.withOpacity(0.1),
+                   borderRadius: BorderRadius.circular(8),
+                 ),
+                 child: Icon(
+                   icon,
+                   color: color,
+                   size: 24,
+                 ),
+               ),
+               Spacer(),
+               Text(
+                 title,
+                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                   color: AppColors.textSecondary,
+                 ),
+               ),
+               SizedBox(height: AppSpacing.extraSmall),
+               Text(
+                 value,
+                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                   fontWeight: FontWeight.bold,
+                   color: color,
+                 ),
+               ),
+             ],
+           ),
+         ),
+       );
+     }
+     
+     Widget _buildQuickActions(BuildContext context) {
+       return Column(
+         crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+           Text(
+             'Quick Actions',
+             style: Theme.of(context).textTheme.titleLarge?.copyWith(
+               fontWeight: FontWeight.bold,
+             ),
+           ),
+           SizedBox(height: AppSpacing.medium),
+           Row(
+             children: [
+               Expanded(
+                 child: _buildActionButton(
+                   context,
+                   icon: Icons.qr_code_scanner,
+                   title: 'Scan QR',
+                   onTap: () => Get.toNamed('/qr-scanner'),
+                 ),
+               ),
+               SizedBox(width: AppSpacing.medium),
+               Expanded(
+                 child: _buildActionButton(
+                   context,
+                   icon: Icons.history,
+                   title: 'Order History',
+                   onTap: _controller.navigateToOrderHistory,
+                 ),
+               ),
+               SizedBox(width: AppSpacing.medium),
+               Expanded(
+                 child: _buildActionButton(
+                   context,
+                   icon: Icons.search,
+                   title: 'Find Restaurants',
+                   onTap: () => Get.toNamed('/restaurants'),
+                 ),
+               ),
+             ],
+           ),
+         ],
+       );
+     }
+     
+     Widget _buildActionButton(
+       BuildContext context, {
+       required IconData icon,
+       required String title,
+       required VoidCallback onTap,
+     }) {
+       return EnhancedCard(
+         onTap: onTap,
+         child: Padding(
+           padding: AppSpacing.allMedium,
+           child: Column(
+             children: [
+               Icon(
+                 icon,
+                 size: 32,
+                 color: AppColors.primary,
+               ),
+               SizedBox(height: AppSpacing.small),
+               Text(
+                 title,
+                 textAlign: TextAlign.center,
+                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                   fontWeight: FontWeight.w600,
+                 ),
+               ),
+             ],
+           ),
+         ),
+       );
+     }
+     
+     Widget _buildRecentOrders(BuildContext context) {
+       return Column(
+         crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+           Row(
+             children: [
+               Text(
+                 'Recent Orders',
+                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                   fontWeight: FontWeight.bold,
+                 ),
+               ),
+               Spacer(),
+               TextButton(
+                 onPressed: _controller.navigateToOrderHistory,
+                 child: Text('View All'),
+               ),
+             ],
+           ),
+           SizedBox(height: AppSpacing.medium),
+           Obx(() {
+             if (_controller.recentOrders.isEmpty) {
+               return _buildEmptyState(
+                 context,
+                 icon: Icons.shopping_bag_outlined,
+                 title: 'No Recent Orders',
+                 subtitle: 'Start ordering to see your history here',
+               );
+             }
+             
+             return ListView.separated(
+               shrinkWrap: true,
+               physics: NeverScrollableScrollPhysics(),
+               itemCount: math.min(_controller.recentOrders.length, 3),
+               separatorBuilder: (context, index) => SizedBox(height: AppSpacing.medium),
+               itemBuilder: (context, index) {
+                 final order = _controller.recentOrders[index];
+                 return OrderCard(
+                   order: order,
+                   onTap: () => _controller.navigateToOrderDetails(order.id),
+                 );
+               },
+             );
+           }),
+         ],
+       );
+     }
+   }
+   ```
+
+**Success Criteria**:
+- ✅ Comprehensive dashboard with order history and favorites
+- ✅ Real-time order status updates
+- ✅ Loyalty points and tier system integration
+- ✅ Responsive design for mobile and tablet
+- ✅ Pull-to-refresh functionality
+- ✅ Quick action buttons for common tasks
+- ✅ Profile management and settings
+- ✅ Customer statistics and insights
+
+**Deliverables**:
+1. Complete customer dashboard with comprehensive stats
+2. Order history with real-time status updates
+3. Favorite restaurants and items management
+4. Loyalty points and tier system display
+5. Quick action buttons for common tasks
+6. Profile management and account settings
+7. Responsive design for all screen sizes
+8. Real-time notification integration

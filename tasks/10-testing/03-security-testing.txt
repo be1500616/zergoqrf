@@ -1,0 +1,920 @@
+**Task: Security Testing and Vulnerability Assessment Framework**
+
+**Objective**: Implement comprehensive security testing framework covering penetration testing, vulnerability scanning, OWASP compliance validation, API security testing, and automated security monitoring to ensure enterprise-grade security for the ZERGO QR platform.
+
+**Phase 1: Automated Security Scanning Framework**
+
+1. **OWASP ZAP Security Testing**:
+   ```python
+   # tests/security/zap_security_test.py
+   import time
+   import json
+   import requests
+   import logging
+   from zapv2 import ZAPv2
+   from typing import Dict, List, Any, Optional
+   import urllib.parse
+   
+   class ZAPSecurityTester:
+       def __init__(self, zap_proxy_url: str = "http://127.0.0.1:8080"):
+           self.zap = ZAPv2(proxies={'http': zap_proxy_url, 'https': zap_proxy_url})
+           self.target_url = "https://api.zergo-qr.com"
+           self.results = {
+               'spider_results': [],
+               'active_scan_results': [],
+               'passive_scan_results': [],
+               'alerts': [],
+               'vulnerabilities': [],
+           }
+           
+       def setup_zap_session(self, session_name: str = "zergo_security_test"):
+           """Initialize ZAP session and configuration"""
+           try:
+               # Create new session
+               self.zap.core.new_session(name=session_name, overwrite=True)
+               
+               # Set up authentication
+               self.setup_authentication()
+               
+               # Configure context
+               context_id = self.zap.context.new_context("ZergoQR")
+               self.zap.context.include_in_context("ZergoQR", f"{self.target_url}.*")
+               
+               # Exclude certain endpoints from scanning
+               self.zap.context.exclude_from_context("ZergoQR", f"{self.target_url}/test/.*")
+               self.zap.context.exclude_from_context("ZergoQR", f"{self.target_url}/docs.*")
+               
+               logging.info(f"ZAP session '{session_name}' configured successfully")
+               return context_id
+               
+           except Exception as e:
+               logging.error(f"Failed to setup ZAP session: {e}")
+               raise
+   
+       def setup_authentication(self):
+           """Configure authentication for testing authenticated endpoints"""
+           try:
+               # Set up form-based authentication
+               login_url = f"{self.target_url}/auth/login"
+               
+               # Configure authentication method
+               auth_method_id = self.zap.authentication.set_authentication_method(
+                   contextid=0,
+                   authmethodname="formBasedAuthentication",
+                   authmethodconfigparams=urllib.parse.urlencode({
+                       'loginUrl': login_url,
+                       'loginRequestData': 'email=test@example.com&password=TestPassword123!',
+                   })
+               )
+               
+               # Set up user credentials
+               user_id = self.zap.users.new_user(contextid=0, name="test_user")
+               self.zap.users.set_authentication_credentials(
+                   contextid=0,
+                   userid=user_id,
+                   authcredentialsconfigparams=urllib.parse.urlencode({
+                       'username': 'test@example.com',
+                       'password': 'TestPassword123!',
+                   })
+               )
+               
+               self.zap.users.set_user_enabled(contextid=0, userid=user_id, enabled=True)
+               
+               logging.info("Authentication configured successfully")
+               
+           except Exception as e:
+               logging.error(f"Failed to setup authentication: {e}")
+   
+       def spider_scan(self, max_depth: int = 5) -> Dict[str, Any]:
+           """Perform spider scan to discover all endpoints"""
+           try:
+               logging.info(f"Starting spider scan on {self.target_url}")
+               
+               # Start spider scan
+               scan_id = self.zap.spider.scan(self.target_url, maxchildren=max_depth)
+               
+               # Wait for spider to complete
+               while int(self.zap.spider.status(scan_id)) < 100:
+                   time.sleep(5)
+                   progress = self.zap.spider.status(scan_id)
+                   logging.info(f"Spider scan progress: {progress}%")
+               
+               # Get spider results
+               urls_found = self.zap.spider.results(scan_id)
+               
+               spider_results = {
+                   'scan_id': scan_id,
+                   'urls_found': len(urls_found),
+                   'urls': urls_found,
+                   'status': 'completed',
+               }
+               
+               self.results['spider_results'].append(spider_results)
+               logging.info(f"Spider scan completed. Found {len(urls_found)} URLs")
+               
+               return spider_results
+               
+           except Exception as e:
+               logging.error(f"Spider scan failed: {e}")
+               return {'status': 'failed', 'error': str(e)}
+   
+       def passive_scan(self) -> Dict[str, Any]:
+           """Perform passive security scan"""
+           try:
+               logging.info("Starting passive security scan")
+               
+               # Enable all passive scan rules
+               self.zap.pscan.enable_all_scanners()
+               
+               # Wait for passive scan to complete
+               while int(self.zap.pscan.records_to_scan) > 0:
+                   time.sleep(5)
+                   remaining = self.zap.pscan.records_to_scan
+                   logging.info(f"Passive scan remaining records: {remaining}")
+               
+               # Get passive scan alerts
+               alerts = self.zap.core.alerts()
+               
+               passive_results = {
+                   'alerts_found': len(alerts),
+                   'alerts': alerts,
+                   'status': 'completed',
+               }
+               
+               self.results['passive_scan_results'].append(passive_results)
+               logging.info(f"Passive scan completed. Found {len(alerts)} alerts")
+               
+               return passive_results
+               
+           except Exception as e:
+               logging.error(f"Passive scan failed: {e}")
+               return {'status': 'failed', 'error': str(e)}
+   
+       def active_scan(self, target_url: Optional[str] = None) -> Dict[str, Any]:
+           """Perform active security scan"""
+           try:
+               scan_target = target_url or self.target_url
+               logging.info(f"Starting active security scan on {scan_target}")
+               
+               # Configure active scan policies
+               self.configure_scan_policies()
+               
+               # Start active scan
+               scan_id = self.zap.ascan.scan(scan_target)
+               
+               # Monitor scan progress
+               while int(self.zap.ascan.status(scan_id)) < 100:
+                   time.sleep(10)
+                   progress = self.zap.ascan.status(scan_id)
+                   logging.info(f"Active scan progress: {progress}%")
+               
+               # Get scan results
+               alerts = self.zap.core.alerts()
+               
+               active_results = {
+                   'scan_id': scan_id,
+                   'alerts_found': len(alerts),
+                   'alerts': alerts,
+                   'status': 'completed',
+               }
+               
+               self.results['active_scan_results'].append(active_results)
+               logging.info(f"Active scan completed. Found {len(alerts)} alerts")
+               
+               return active_results
+               
+           except Exception as e:
+               logging.error(f"Active scan failed: {e}")
+               return {'status': 'failed', 'error': str(e)}
+   
+       def configure_scan_policies(self):
+           """Configure active scan policies for comprehensive testing"""
+           try:
+               # Enable all scan rules for thorough testing
+               policy_name = "ZergoQR_Comprehensive"
+               
+               # SQL Injection tests
+               self.zap.ascan.enable_scanners(
+                   ids="40018,40019,40020,40021,40022,40023,40024,40025,40026,40027"
+               )
+               
+               # XSS tests
+               self.zap.ascan.enable_scanners(
+                   ids="40012,40013,40014,40016,40017"
+               )
+               
+               # Authentication bypass tests
+               self.zap.ascan.enable_scanners(
+                   ids="10101,10102,10103"
+               )
+               
+               # Path traversal tests
+               self.zap.ascan.enable_scanners(
+                   ids="6,7,10048"
+               )
+               
+               # Command injection tests
+               self.zap.ascan.enable_scanners(
+                   ids="90018,90019,90020"
+               )
+               
+               # CSRF tests
+               self.zap.ascan.enable_scanners(
+                   ids="20012"
+               )
+               
+               logging.info("Scan policies configured successfully")
+               
+           except Exception as e:
+               logging.error(f"Failed to configure scan policies: {e}")
+   
+       def api_security_test(self, openapi_spec_url: str) -> Dict[str, Any]:
+           """Test API security using OpenAPI specification"""
+           try:
+               logging.info(f"Starting API security test with OpenAPI spec: {openapi_spec_url}")
+               
+               # Import OpenAPI spec
+               self.zap.openapi.import_url(openapi_spec_url)
+               
+               # Run API-specific scans
+               api_results = {
+                   'authentication_tests': self.test_api_authentication(),
+                   'authorization_tests': self.test_api_authorization(),
+                   'input_validation_tests': self.test_api_input_validation(),
+                   'rate_limiting_tests': self.test_api_rate_limiting(),
+               }
+               
+               return api_results
+               
+           except Exception as e:
+               logging.error(f"API security test failed: {e}")
+               return {'status': 'failed', 'error': str(e)}
+   
+       def test_api_authentication(self) -> Dict[str, Any]:
+           """Test API authentication mechanisms"""
+           auth_tests = []
+           
+           # Test endpoints without authentication
+           test_endpoints = [
+               f"{self.target_url}/restaurants",
+               f"{self.target_url}/menu-items",
+               f"{self.target_url}/orders",
+               f"{self.target_url}/auth/profile",
+           ]
+           
+           for endpoint in test_endpoints:
+               try:
+                   # Test without token
+                   response = requests.get(endpoint)
+                   auth_tests.append({
+                       'endpoint': endpoint,
+                       'test_type': 'no_auth',
+                       'status_code': response.status_code,
+                       'expected': [401, 403],
+                       'passed': response.status_code in [401, 403],
+                   })
+                   
+                   # Test with invalid token
+                   headers = {'Authorization': 'Bearer invalid_token'}
+                   response = requests.get(endpoint, headers=headers)
+                   auth_tests.append({
+                       'endpoint': endpoint,
+                       'test_type': 'invalid_token',
+                       'status_code': response.status_code,
+                       'expected': [401, 403],
+                       'passed': response.status_code in [401, 403],
+                   })
+                   
+                   # Test with expired token
+                   expired_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MDkzODg4MDB9.expired"
+                   headers = {'Authorization': f'Bearer {expired_token}'}
+                   response = requests.get(endpoint, headers=headers)
+                   auth_tests.append({
+                       'endpoint': endpoint,
+                       'test_type': 'expired_token',
+                       'status_code': response.status_code,
+                       'expected': [401, 403],
+                       'passed': response.status_code in [401, 403],
+                   })
+                   
+               except Exception as e:
+                   auth_tests.append({
+                       'endpoint': endpoint,
+                       'test_type': 'error',
+                       'error': str(e),
+                       'passed': False,
+                   })
+           
+           return {
+               'tests_run': len(auth_tests),
+               'tests_passed': len([t for t in auth_tests if t.get('passed', False)]),
+               'details': auth_tests,
+           }
+   
+       def test_api_authorization(self) -> Dict[str, Any]:
+           """Test API authorization and access controls"""
+           authz_tests = []
+           
+           # Test role-based access control
+           test_scenarios = [
+               {
+                   'role': 'customer',
+                   'allowed_endpoints': ['/auth/profile', '/restaurants', '/menu-items'],
+                   'forbidden_endpoints': ['/admin/users', '/admin/restaurants', '/admin/analytics'],
+               },
+               {
+                   'role': 'restaurant_owner',
+                   'allowed_endpoints': ['/restaurants/{restaurant_id}', '/menu-items', '/orders'],
+                   'forbidden_endpoints': ['/admin/users', '/admin/analytics'],
+               },
+           ]
+           
+           for scenario in test_scenarios:
+               for endpoint in scenario['forbidden_endpoints']:
+                   try:
+                       # Get token for role (mock implementation)
+                       token = self.get_test_token_for_role(scenario['role'])
+                       headers = {'Authorization': f'Bearer {token}'}
+                       
+                       response = requests.get(f"{self.target_url}{endpoint}", headers=headers)
+                       authz_tests.append({
+                           'role': scenario['role'],
+                           'endpoint': endpoint,
+                           'test_type': 'forbidden_access',
+                           'status_code': response.status_code,
+                           'expected': [403, 404],
+                           'passed': response.status_code in [403, 404],
+                       })
+                       
+                   except Exception as e:
+                       authz_tests.append({
+                           'role': scenario['role'],
+                           'endpoint': endpoint,
+                           'test_type': 'error',
+                           'error': str(e),
+                           'passed': False,
+                       })
+           
+           return {
+               'tests_run': len(authz_tests),
+               'tests_passed': len([t for t in authz_tests if t.get('passed', False)]),
+               'details': authz_tests,
+           }
+   
+       def test_api_input_validation(self) -> Dict[str, Any]:
+           """Test API input validation and sanitization"""
+           validation_tests = []
+           
+           # SQL Injection payloads
+           sql_payloads = [
+               "' OR '1'='1",
+               "'; DROP TABLE users; --",
+               "' UNION SELECT * FROM users --",
+               "1' AND 1=1 --",
+           ]
+           
+           # XSS payloads
+           xss_payloads = [
+               "<script>alert('XSS')</script>",
+               "javascript:alert('XSS')",
+               "<img src=x onerror=alert('XSS')>",
+               "';alert('XSS');//",
+           ]
+           
+           # Command injection payloads
+           cmd_payloads = [
+               "; ls -la",
+               "| whoami",
+               "&& cat /etc/passwd",
+               "`id`",
+           ]
+           
+           test_endpoints = [
+               {'url': f"{self.target_url}/auth/login", 'method': 'POST', 'params': ['email', 'password']},
+               {'url': f"{self.target_url}/restaurants", 'method': 'GET', 'params': ['search', 'category']},
+               {'url': f"{self.target_url}/menu-items", 'method': 'GET', 'params': ['name', 'description']},
+           ]
+           
+           for endpoint in test_endpoints:
+               for param in endpoint['params']:
+                   # Test SQL injection
+                   for payload in sql_payloads:
+                       try:
+                           data = {param: payload}
+                           response = requests.request(endpoint['method'], endpoint['url'], 
+                                                     json=data if endpoint['method'] == 'POST' else None,
+                                                     params=data if endpoint['method'] == 'GET' else None)
+                           
+                           validation_tests.append({
+                               'endpoint': endpoint['url'],
+                               'parameter': param,
+                               'payload_type': 'sql_injection',
+                               'payload': payload,
+                               'status_code': response.status_code,
+                               'response_contains_error': 'error' in response.text.lower(),
+                               'passed': response.status_code != 200 or 'error' in response.text.lower(),
+                           })
+                           
+                       except Exception as e:
+                           validation_tests.append({
+                               'endpoint': endpoint['url'],
+                               'parameter': param,
+                               'payload_type': 'sql_injection',
+                               'payload': payload,
+                               'error': str(e),
+                               'passed': True,  # Exception is good for malicious input
+                           })
+                   
+                   # Test XSS
+                   for payload in xss_payloads:
+                       try:
+                           data = {param: payload}
+                           response = requests.request(endpoint['method'], endpoint['url'],
+                                                     json=data if endpoint['method'] == 'POST' else None,
+                                                     params=data if endpoint['method'] == 'GET' else None)
+                           
+                           # Check if payload is reflected without encoding
+                           payload_reflected = payload in response.text
+                           
+                           validation_tests.append({
+                               'endpoint': endpoint['url'],
+                               'parameter': param,
+                               'payload_type': 'xss',
+                               'payload': payload,
+                               'status_code': response.status_code,
+                               'payload_reflected': payload_reflected,
+                               'passed': not payload_reflected,
+                           })
+                           
+                       except Exception as e:
+                           validation_tests.append({
+                               'endpoint': endpoint['url'],
+                               'parameter': param,
+                               'payload_type': 'xss',
+                               'payload': payload,
+                               'error': str(e),
+                               'passed': True,
+                           })
+           
+           return {
+               'tests_run': len(validation_tests),
+               'tests_passed': len([t for t in validation_tests if t.get('passed', False)]),
+               'details': validation_tests,
+           }
+   
+       def test_api_rate_limiting(self) -> Dict[str, Any]:
+           """Test API rate limiting mechanisms"""
+           rate_limit_tests = []
+           
+           test_endpoints = [
+               f"{self.target_url}/auth/login",
+               f"{self.target_url}/restaurants",
+               f"{self.target_url}/menu-items",
+           ]
+           
+           for endpoint in test_endpoints:
+               try:
+                   responses = []
+                   
+                   # Send rapid requests to trigger rate limiting
+                   for i in range(150):  # Exceed typical rate limit
+                       response = requests.get(endpoint)
+                       responses.append({
+                           'request_number': i + 1,
+                           'status_code': response.status_code,
+                           'has_rate_limit_headers': 'x-ratelimit-remaining' in response.headers or 'retry-after' in response.headers,
+                       })
+                       
+                       # Stop if rate limited
+                       if response.status_code == 429:
+                           break
+                   
+                   # Analyze results
+                   rate_limited = any(r['status_code'] == 429 for r in responses)
+                   has_rate_limit_headers = any(r['has_rate_limit_headers'] for r in responses)
+                   
+                   rate_limit_tests.append({
+                       'endpoint': endpoint,
+                       'total_requests': len(responses),
+                       'rate_limited': rate_limited,
+                       'has_rate_limit_headers': has_rate_limit_headers,
+                       'passed': rate_limited and has_rate_limit_headers,
+                       'responses': responses[:10],  # Store first 10 for analysis
+                   })
+                   
+               except Exception as e:
+                   rate_limit_tests.append({
+                       'endpoint': endpoint,
+                       'error': str(e),
+                       'passed': False,
+                   })
+           
+           return {
+               'tests_run': len(rate_limit_tests),
+               'tests_passed': len([t for t in rate_limit_tests if t.get('passed', False)]),
+               'details': rate_limit_tests,
+           }
+   
+       def get_test_token_for_role(self, role: str) -> str:
+           """Get test authentication token for specific role (mock implementation)"""
+           # In real implementation, this would authenticate with test accounts
+           test_tokens = {
+               'customer': 'customer_test_token',
+               'restaurant_owner': 'owner_test_token',
+               'admin': 'admin_test_token',
+           }
+           return test_tokens.get(role, 'invalid_token')
+   
+       def generate_security_report(self) -> Dict[str, Any]:
+           """Generate comprehensive security test report"""
+           all_alerts = []
+           
+           # Collect all alerts from different scans
+           for result in self.results['active_scan_results'] + self.results['passive_scan_results']:
+               if 'alerts' in result:
+                   all_alerts.extend(result['alerts'])
+           
+           # Categorize alerts by risk level
+           alert_categories = {
+               'High': [a for a in all_alerts if a.get('risk', '').lower() == 'high'],
+               'Medium': [a for a in all_alerts if a.get('risk', '').lower() == 'medium'],
+               'Low': [a for a in all_alerts if a.get('risk', '').lower() == 'low'],
+               'Informational': [a for a in all_alerts if a.get('risk', '').lower() == 'informational'],
+           }
+           
+           # Calculate security score (0-100)
+           total_score = 100
+           total_score -= len(alert_categories['High']) * 20
+           total_score -= len(alert_categories['Medium']) * 10
+           total_score -= len(alert_categories['Low']) * 5
+           total_score -= len(alert_categories['Informational']) * 1
+           security_score = max(0, total_score)
+           
+           report = {
+               'summary': {
+                   'security_score': security_score,
+                   'total_alerts': len(all_alerts),
+                   'high_risk_alerts': len(alert_categories['High']),
+                   'medium_risk_alerts': len(alert_categories['Medium']),
+                   'low_risk_alerts': len(alert_categories['Low']),
+                   'informational_alerts': len(alert_categories['Informational']),
+               },
+               'alert_categories': alert_categories,
+               'scan_results': {
+                   'spider_results': self.results['spider_results'],
+                   'active_scan_results': self.results['active_scan_results'],
+                   'passive_scan_results': self.results['passive_scan_results'],
+               },
+               'recommendations': self.generate_security_recommendations(alert_categories),
+           }
+           
+           return report
+   
+       def generate_security_recommendations(self, alert_categories: Dict[str, List]) -> List[str]:
+           """Generate security recommendations based on found vulnerabilities"""
+           recommendations = []
+           
+           if alert_categories['High']:
+               recommendations.append("URGENT: High-risk vulnerabilities found. Immediate remediation required.")
+               recommendations.append("Review and fix SQL injection vulnerabilities.")
+               recommendations.append("Implement proper input validation and parameterized queries.")
+           
+           if alert_categories['Medium']:
+               recommendations.append("Medium-risk vulnerabilities need attention within 30 days.")
+               recommendations.append("Implement proper authentication and session management.")
+               recommendations.append("Add CSRF protection to all state-changing operations.")
+           
+           if len(alert_categories['Low']) > 10:
+               recommendations.append("Multiple low-risk issues detected. Consider bulk remediation.")
+               recommendations.append("Implement security headers and content security policy.")
+           
+           recommendations.extend([
+               "Regular security scanning should be implemented in CI/CD pipeline.",
+               "Implement Web Application Firewall (WAF) for additional protection.",
+               "Conduct regular penetration testing by security professionals.",
+               "Implement security monitoring and incident response procedures.",
+           ])
+           
+           return recommendations
+   
+   
+   def run_comprehensive_security_test():
+       """Main function to run comprehensive security testing"""
+       tester = ZAPSecurityTester()
+       
+       try:
+           # Setup ZAP session
+           tester.setup_zap_session("zergo_comprehensive_security_test")
+           
+           # Run spider scan
+           spider_results = tester.spider_scan(max_depth=3)
+           
+           # Run passive scan
+           passive_results = tester.passive_scan()
+           
+           # Run active scan
+           active_results = tester.active_scan()
+           
+           # Run API security tests
+           api_results = tester.api_security_test(f"{tester.target_url}/docs/openapi.json")
+           
+           # Generate comprehensive report
+           security_report = tester.generate_security_report()
+           
+           # Save report
+           with open('security_test_report.json', 'w') as f:
+               json.dump(security_report, f, indent=2)
+           
+           print(f"Security test completed. Score: {security_report['summary']['security_score']}/100")
+           print(f"High-risk alerts: {security_report['summary']['high_risk_alerts']}")
+           print(f"Medium-risk alerts: {security_report['summary']['medium_risk_alerts']}")
+           
+           return security_report
+           
+       except Exception as e:
+           logging.error(f"Security test failed: {e}")
+           return {'status': 'failed', 'error': str(e)}
+   
+   if __name__ == "__main__":
+       logging.basicConfig(level=logging.INFO)
+       run_comprehensive_security_test()
+   ```
+
+2. **Infrastructure Security Scanning**:
+   ```bash
+   #!/bin/bash
+   # tests/security/infrastructure_security_scan.sh
+   
+   set -e
+   
+   echo "Starting Infrastructure Security Scan for ZERGO QR Platform"
+   echo "============================================================"
+   
+   # Create results directory
+   mkdir -p security_scan_results
+   RESULTS_DIR="security_scan_results/$(date +%Y%m%d_%H%M%S)"
+   mkdir -p "$RESULTS_DIR"
+   
+   # Target configurations
+   TARGET_DOMAIN="api.zergo-qr.com"
+   TARGET_IP="$(dig +short $TARGET_DOMAIN)"
+   WEB_URL="https://$TARGET_DOMAIN"
+   
+   echo "Target Domain: $TARGET_DOMAIN"
+   echo "Target IP: $TARGET_IP"
+   echo "Results Directory: $RESULTS_DIR"
+   echo
+   
+   # Function to run nmap scans
+   run_nmap_scans() {
+       echo "Running Nmap Security Scans..."
+       
+       # Basic port scan
+       echo "  - Port scan"
+       nmap -sS -sV -O -A -T4 "$TARGET_IP" > "$RESULTS_DIR/nmap_port_scan.txt" 2>&1
+       
+       # Vulnerability scan
+       echo "  - Vulnerability scan"
+       nmap --script vuln "$TARGET_IP" > "$RESULTS_DIR/nmap_vuln_scan.txt" 2>&1
+       
+       # SSL/TLS scan
+       echo "  - SSL/TLS scan"
+       nmap --script ssl-enum-ciphers -p 443 "$TARGET_IP" > "$RESULTS_DIR/nmap_ssl_scan.txt" 2>&1
+       
+       # HTTP security headers scan
+       echo "  - HTTP headers scan"
+       nmap --script http-security-headers -p 80,443 "$TARGET_IP" > "$RESULTS_DIR/nmap_headers_scan.txt" 2>&1
+       
+       echo "Nmap scans completed"
+   }
+   
+   # Function to run SSL Labs assessment
+   run_ssl_assessment() {
+       echo "Running SSL Labs Assessment..."
+       
+       # Use SSL Labs API
+       curl -s "https://api.ssllabs.com/api/v3/analyze?host=$TARGET_DOMAIN&publish=off&all=done" \
+           > "$RESULTS_DIR/ssllabs_assessment.json"
+       
+       echo "SSL Labs assessment completed"
+   }
+   
+   # Function to run security header analysis
+   run_security_headers_check() {
+       echo "Checking Security Headers..."
+       
+       # Check for security headers
+       curl -I -s "$WEB_URL" > "$RESULTS_DIR/security_headers.txt"
+       
+       # Analyze headers
+       cat > "$RESULTS_DIR/security_headers_analysis.txt" << EOF
+   Security Headers Analysis for $TARGET_DOMAIN
+   ============================================
+   
+   Required Security Headers:
+   EOF
+   
+       # Check for specific headers
+       headers_to_check=(
+           "Strict-Transport-Security"
+           "Content-Security-Policy"
+           "X-Frame-Options"
+           "X-Content-Type-Options"
+           "Referrer-Policy"
+           "Permissions-Policy"
+           "X-XSS-Protection"
+       )
+   
+       for header in "${headers_to_check[@]}"; do
+           if grep -qi "$header" "$RESULTS_DIR/security_headers.txt"; then
+               echo "✓ $header: Present" >> "$RESULTS_DIR/security_headers_analysis.txt"
+           else
+               echo "✗ $header: Missing" >> "$RESULTS_DIR/security_headers_analysis.txt"
+           fi
+       done
+       
+       echo "Security headers check completed"
+   }
+   
+   # Function to run DNS security checks
+   run_dns_security_checks() {
+       echo "Running DNS Security Checks..."
+       
+       # DNS configuration check
+       echo "DNS Records for $TARGET_DOMAIN:" > "$RESULTS_DIR/dns_security.txt"
+       echo "================================" >> "$RESULTS_DIR/dns_security.txt"
+       
+       # Check various DNS records
+       dig A "$TARGET_DOMAIN" >> "$RESULTS_DIR/dns_security.txt"
+       dig AAAA "$TARGET_DOMAIN" >> "$RESULTS_DIR/dns_security.txt"
+       dig MX "$TARGET_DOMAIN" >> "$RESULTS_DIR/dns_security.txt"
+       dig TXT "$TARGET_DOMAIN" >> "$RESULTS_DIR/dns_security.txt"
+       dig NS "$TARGET_DOMAIN" >> "$RESULTS_DIR/dns_security.txt"
+       
+       # Check for SPF, DKIM, DMARC
+       echo -e "\nEmail Security Records:" >> "$RESULTS_DIR/dns_security.txt"
+       dig TXT "$TARGET_DOMAIN" | grep -i spf >> "$RESULTS_DIR/dns_security.txt" || echo "SPF: Not found" >> "$RESULTS_DIR/dns_security.txt"
+       dig TXT "_dmarc.$TARGET_DOMAIN" >> "$RESULTS_DIR/dns_security.txt" || echo "DMARC: Not found" >> "$RESULTS_DIR/dns_security.txt"
+       
+       echo "DNS security checks completed"
+   }
+   
+   # Function to run web application security tests
+   run_web_security_tests() {
+       echo "Running Web Application Security Tests..."
+       
+       # Test for common vulnerabilities
+       echo "Web Application Security Test Results" > "$RESULTS_DIR/web_security_tests.txt"
+       echo "====================================" >> "$RESULTS_DIR/web_security_tests.txt"
+       
+       # Test for clickjacking protection
+       echo -e "\n1. Clickjacking Protection Test:" >> "$RESULTS_DIR/web_security_tests.txt"
+       if curl -I -s "$WEB_URL" | grep -qi "x-frame-options\|content-security-policy"; then
+           echo "✓ Clickjacking protection present" >> "$RESULTS_DIR/web_security_tests.txt"
+       else
+           echo "✗ Clickjacking protection missing" >> "$RESULTS_DIR/web_security_tests.txt"
+       fi
+       
+       # Test for HTTPS redirect
+       echo -e "\n2. HTTPS Redirect Test:" >> "$RESULTS_DIR/web_security_tests.txt"
+       http_response=$(curl -I -s "http://$TARGET_DOMAIN" | head -n 1)
+       if echo "$http_response" | grep -q "301\|302"; then
+           echo "✓ HTTP to HTTPS redirect present" >> "$RESULTS_DIR/web_security_tests.txt"
+       else
+           echo "✗ HTTP to HTTPS redirect missing" >> "$RESULTS_DIR/web_security_tests.txt"
+       fi
+       
+       # Test for secure cookies
+       echo -e "\n3. Secure Cookie Test:" >> "$RESULTS_DIR/web_security_tests.txt"
+       cookie_response=$(curl -I -s "$WEB_URL/auth/login")
+       if echo "$cookie_response" | grep -qi "secure.*httponly"; then
+           echo "✓ Secure cookie flags present" >> "$RESULTS_DIR/web_security_tests.txt"
+       else
+           echo "✗ Secure cookie flags missing or incomplete" >> "$RESULTS_DIR/web_security_tests.txt"
+       fi
+       
+       echo "Web application security tests completed"
+   }
+   
+   # Function to run container security scan (if using Docker)
+   run_container_security_scan() {
+       echo "Running Container Security Scan..."
+       
+       # Check if Docker is available
+       if command -v docker &> /dev/null; then
+           # Scan local images if available
+           echo "Docker Images Security Scan:" > "$RESULTS_DIR/container_security.txt"
+           echo "============================" >> "$RESULTS_DIR/container_security.txt"
+           
+           # List images
+           docker images --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}" >> "$RESULTS_DIR/container_security.txt"
+           
+           # Scan with Trivy if available
+           if command -v trivy &> /dev/null; then
+               echo -e "\nTrivy Vulnerability Scan:" >> "$RESULTS_DIR/container_security.txt"
+               trivy image --format table zergo-qr-backend:latest >> "$RESULTS_DIR/container_security.txt" 2>&1 || echo "Backend image not found locally" >> "$RESULTS_DIR/container_security.txt"
+               trivy image --format table zergo-qr-frontend:latest >> "$RESULTS_DIR/container_security.txt" 2>&1 || echo "Frontend image not found locally" >> "$RESULTS_DIR/container_security.txt"
+           else
+               echo "Trivy not available for container scanning" >> "$RESULTS_DIR/container_security.txt"
+           fi
+       else
+           echo "Docker not available for container scanning" > "$RESULTS_DIR/container_security.txt"
+       fi
+       
+       echo "Container security scan completed"
+   }
+   
+   # Function to generate security report
+   generate_security_report() {
+       echo "Generating Security Assessment Report..."
+       
+       cat > "$RESULTS_DIR/security_assessment_report.md" << EOF
+   # Infrastructure Security Assessment Report
+   
+   **Target**: $TARGET_DOMAIN  
+   **Date**: $(date)  
+   **Scan Duration**: $(date)
+   
+   ## Executive Summary
+   
+   This report contains the results of a comprehensive security assessment of the ZERGO QR platform infrastructure.
+   
+   ## Scan Results
+   
+   ### 1. Network Security
+   - **Port Scan Results**: See \`nmap_port_scan.txt\`
+   - **Vulnerability Scan**: See \`nmap_vuln_scan.txt\`
+   - **SSL/TLS Assessment**: See \`nmap_ssl_scan.txt\` and \`ssllabs_assessment.json\`
+   
+   ### 2. Web Application Security
+   - **Security Headers**: See \`security_headers_analysis.txt\`
+   - **Web Security Tests**: See \`web_security_tests.txt\`
+   
+   ### 3. DNS Security
+   - **DNS Configuration**: See \`dns_security.txt\`
+   
+   ### 4. Container Security
+   - **Container Scan Results**: See \`container_security.txt\`
+   
+   ## Recommendations
+   
+   Based on the scan results, the following security improvements are recommended:
+   
+   1. **Implement missing security headers** if any were found missing
+   2. **Review SSL/TLS configuration** for optimal security
+   3. **Address any high-risk vulnerabilities** found in scans
+   4. **Implement regular security scanning** in CI/CD pipeline
+   5. **Set up security monitoring** and alerting
+   
+   ## Next Steps
+   
+   1. Review all scan results in detail
+   2. Prioritize findings by risk level
+   3. Create remediation plan with timelines
+   4. Implement security improvements
+   5. Schedule regular security assessments
+   
+   EOF
+       
+       echo "Security assessment report generated"
+   }
+   
+   # Main execution
+   echo "Starting security assessment..."
+   
+   # Run all security scans
+   run_nmap_scans
+   run_ssl_assessment
+   run_security_headers_check
+   run_dns_security_checks
+   run_web_security_tests
+   run_container_security_scan
+   
+   # Generate final report
+   generate_security_report
+   
+   echo
+   echo "Security Assessment Complete!"
+   echo "=============================="
+   echo "Results saved in: $RESULTS_DIR"
+   echo
+   echo "Key files:"
+   echo "  - security_assessment_report.md (Main report)"
+   echo "  - nmap_*.txt (Network scans)"
+   echo "  - security_headers_analysis.txt (Header analysis)"
+   echo "  - web_security_tests.txt (Web app tests)"
+   echo
+   echo "Review all findings and implement recommended security improvements."
+   ```
+
+**Success Criteria**:
+- ✅ OWASP Top 10 compliance validation
+- ✅ Zero high-risk security vulnerabilities
+- ✅ <5 medium-risk vulnerabilities allowed
+- ✅ All security headers properly implemented
+- ✅ API authentication/authorization working correctly
+- ✅ Input validation preventing injection attacks
+- ✅ Rate limiting protecting against abuse
+- ✅ SSL/TLS configuration receives A+ rating
+- ✅ Container images have no critical vulnerabilities
+- ✅ Infrastructure passes penetration testing

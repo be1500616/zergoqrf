@@ -1,0 +1,726 @@
+**Task: Optimize Supabase Integration for High-Performance Restaurant Platform**
+
+**Objective**: Implement comprehensive Supabase integration optimization for the ZERGO QR platform, focusing on Row Level Security (RLS), real-time subscriptions, performance tuning, and multi-tenant architecture to support 1000+ concurrent users.
+
+**Phase 1: Supabase Connection and Authentication Setup**
+
+1. **Optimized Supabase Client Configuration**:
+   ```python
+   # app/core/supabase_client.py
+   from supabase import create_client, Client
+   from supabase.lib.client_options import ClientOptions
+   import asyncio
+   import aiohttp
+   from typing import Dict, Any, Optional, List
+   import json
+   from datetime import datetime, timedelta
+   import logging
+   
+   from app.core.config import get_settings
+   
+   settings = get_settings()
+   logger = logging.getLogger(__name__)
+   
+   class OptimizedSupabaseClient:
+       def __init__(self):
+           self.url = settings.SUPABASE_URL
+           self.anon_key = settings.SUPABASE_ANON_KEY
+           self.service_role_key = settings.SUPABASE_SERVICE_ROLE_KEY
+           
+           # Client options for performance optimization
+           self.client_options = ClientOptions(
+               schema="public",
+               headers={
+                   "apikey": self.anon_key,
+                   "Authorization": f"Bearer {self.anon_key}",
+                   "Content-Type": "application/json",
+                   "Accept": "application/json",
+               },
+               auto_refresh_token=True,
+               persist_session=True,
+               detect_session_in_url=False,
+               flow_type="pkce"
+           )
+           
+           # Create clients
+           self.client: Client = create_client(
+               self.url, 
+               self.anon_key, 
+               options=self.client_options
+           )
+           
+           self.service_client: Client = create_client(
+               self.url, 
+               self.service_role_key,
+               options=ClientOptions(schema="public")
+           )
+           
+           # Connection pool for async operations
+           self.session_pool = None
+           self.max_connections = 20
+           
+       async def init_connection_pool(self):
+           """Initialize async HTTP session pool for better performance"""
+           connector = aiohttp.TCPConnector(
+               limit=self.max_connections,
+               limit_per_host=10,
+               ttl_dns_cache=300,
+               use_dns_cache=True,
+               keepalive_timeout=30,
+               enable_cleanup_closed=True
+           )
+           
+           self.session_pool = aiohttp.ClientSession(
+               connector=connector,
+               timeout=aiohttp.ClientTimeout(total=30),
+               headers={
+                   "apikey": self.anon_key,
+                   "Content-Type": "application/json",
+                   "Accept": "application/json",
+               }
+           )
+           
+       async def close_connection_pool(self):
+           """Close async HTTP session pool"""
+           if self.session_pool:
+               await self.session_pool.close()
+   
+       async def execute_rpc(self, function_name: str, params: Dict = None) -> Dict[str, Any]:
+           """Execute Supabase RPC function with optimized async call"""
+           if not self.session_pool:
+               await self.init_connection_pool()
+           
+           url = f"{self.url}/rest/v1/rpc/{function_name}"
+           
+           async with self.session_pool.post(
+               url,
+               json=params or {},
+               headers={"Authorization": f"Bearer {self.service_role_key}"}
+           ) as response:
+               if response.status == 200:
+                   return await response.json()
+               else:
+                   error_text = await response.text()
+                   raise Exception(f"RPC call failed: {error_text}")
+   
+       async def bulk_insert(self, table: str, data: List[Dict], batch_size: int = 100) -> List[Dict]:
+           """Optimized bulk insert with batching"""
+           results = []
+           
+           for i in range(0, len(data), batch_size):
+               batch = data[i:i + batch_size]
+               
+               try:
+                   result = self.service_client.table(table).insert(batch).execute()
+                   results.extend(result.data)
+                   
+                   # Small delay between batches to avoid rate limits
+                   if i + batch_size < len(data):
+                       await asyncio.sleep(0.1)
+                       
+               except Exception as e:
+                   logger.error(f"Bulk insert batch failed: {e}")
+                   raise
+                   
+           return results
+   
+       async def bulk_upsert(self, table: str, data: List[Dict], on_conflict: str = "id") -> List[Dict]:
+           """Optimized bulk upsert operation"""
+           try:
+               result = self.service_client.table(table).upsert(
+                   data, 
+                   on_conflict=on_conflict,
+                   returning="representation"
+               ).execute()
+               return result.data
+           except Exception as e:
+               logger.error(f"Bulk upsert failed: {e}")
+               raise
+   
+   # Global Supabase client instance
+   supabase_client = OptimizedSupabaseClient()
+   ```
+
+2. **Row Level Security (RLS) Policies Implementation**:
+   ```sql
+   -- SQL Policies to be executed in Supabase dashboard or via migration
+   
+   -- Restaurant RLS Policies
+   CREATE POLICY "Users can only see their own restaurants" ON restaurants
+   FOR SELECT USING (
+       auth.uid() IN (
+           SELECT user_id FROM restaurant_users 
+           WHERE restaurant_id = restaurants.id
+       )
+   );
+   
+   CREATE POLICY "Restaurant owners can update their restaurants" ON restaurants
+   FOR UPDATE USING (
+       auth.uid() IN (
+           SELECT user_id FROM restaurant_users 
+           WHERE restaurant_id = restaurants.id 
+           AND role IN ('owner', 'admin')
+       )
+   );
+   
+   CREATE POLICY "Restaurant staff can insert orders" ON orders
+   FOR INSERT WITH CHECK (
+       auth.uid() IN (
+           SELECT user_id FROM restaurant_users 
+           WHERE restaurant_id = orders.restaurant_id
+           AND role IN ('owner', 'admin', 'staff')
+       )
+   );
+   
+   -- Menu Item RLS Policies
+   CREATE POLICY "Public can view published menu items" ON menu_items
+   FOR SELECT USING (
+       status = 'published' OR 
+       auth.uid() IN (
+           SELECT user_id FROM restaurant_users 
+           WHERE restaurant_id = menu_items.restaurant_id
+       )
+   );
+   
+   CREATE POLICY "Restaurant staff can manage menu items" ON menu_items
+   FOR ALL USING (
+       auth.uid() IN (
+           SELECT user_id FROM restaurant_users 
+           WHERE restaurant_id = menu_items.restaurant_id
+           AND role IN ('owner', 'admin', 'kitchen_staff')
+       )
+   );
+   
+   -- Order RLS Policies
+   CREATE POLICY "Customers can view their own orders" ON orders
+   FOR SELECT USING (
+       customer_id = auth.uid() OR
+       auth.uid() IN (
+           SELECT user_id FROM restaurant_users 
+           WHERE restaurant_id = orders.restaurant_id
+       )
+   );
+   
+   CREATE POLICY "Restaurant staff can manage orders" ON orders
+   FOR ALL USING (
+       auth.uid() IN (
+           SELECT user_id FROM restaurant_users 
+           WHERE restaurant_id = orders.restaurant_id
+           AND role IN ('owner', 'admin', 'staff', 'kitchen_staff')
+       )
+   );
+   
+   -- Customer Analytics RLS
+   CREATE POLICY "Restaurant owners can view customer analytics" ON customer_analytics
+   FOR SELECT USING (
+       auth.uid() IN (
+           SELECT user_id FROM restaurant_users 
+           WHERE restaurant_id = customer_analytics.restaurant_id
+           AND role IN ('owner', 'admin')
+       )
+   );
+   
+   -- Performance Optimization Functions
+   CREATE OR REPLACE FUNCTION get_user_restaurants(user_uuid uuid)
+   RETURNS TABLE(restaurant_id uuid, role text) 
+   LANGUAGE sql SECURITY DEFINER
+   AS $$
+     SELECT restaurant_id, role 
+     FROM restaurant_users 
+     WHERE user_id = user_uuid;
+   $$;
+   
+   CREATE INDEX IF NOT EXISTS idx_restaurant_users_user_id ON restaurant_users(user_id);
+   CREATE INDEX IF NOT EXISTS idx_restaurant_users_restaurant_id ON restaurant_users(restaurant_id);
+   CREATE INDEX IF NOT EXISTS idx_orders_restaurant_id ON orders(restaurant_id);
+   CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
+   CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+   CREATE INDEX IF NOT EXISTS idx_menu_items_restaurant_id ON menu_items(restaurant_id);
+   CREATE INDEX IF NOT EXISTS idx_menu_items_status ON menu_items(status);
+   ```
+
+**Phase 2: Real-time Subscription Management**
+
+1. **Optimized Real-time Subscription Service**:
+   ```python
+   # app/features/realtime/realtime_service.py
+   import asyncio
+   from typing import Dict, Callable, Any, List, Optional
+   import json
+   import websockets
+   import logging
+   from datetime import datetime
+   
+   logger = logging.getLogger(__name__)
+   
+   class RealtimeSubscriptionManager:
+       def __init__(self, supabase_client):
+           self.supabase_client = supabase_client
+           self.active_subscriptions: Dict[str, Any] = {}
+           self.connection_pools: Dict[str, List] = {}
+           self.max_connections_per_restaurant = 10
+           
+       async def subscribe_to_orders(
+           self, 
+           restaurant_id: str, 
+           callback: Callable[[Dict], None],
+           user_token: str
+       ) -> str:
+           """Subscribe to real-time order updates for a restaurant"""
+           
+           subscription_id = f"orders_{restaurant_id}_{datetime.now().timestamp()}"
+           
+           try:
+               # Create subscription with optimized filters
+               subscription = self.supabase_client.client.table('orders')\
+                   .on('*')\
+                   .filter('restaurant_id', 'eq', restaurant_id)\
+                   .subscribe(
+                       callback=lambda payload: self._handle_order_update(payload, callback),
+                       headers={"Authorization": f"Bearer {user_token}"}
+                   )
+               
+               self.active_subscriptions[subscription_id] = subscription
+               
+               # Add to connection pool for restaurant
+               if restaurant_id not in self.connection_pools:
+                   self.connection_pools[restaurant_id] = []
+               
+               if len(self.connection_pools[restaurant_id]) < self.max_connections_per_restaurant:
+                   self.connection_pools[restaurant_id].append(subscription_id)
+               else:
+                   # Remove oldest connection to make room
+                   oldest_id = self.connection_pools[restaurant_id].pop(0)
+                   await self.unsubscribe(oldest_id)
+                   self.connection_pools[restaurant_id].append(subscription_id)
+               
+               logger.info(f"Created order subscription: {subscription_id}")
+               return subscription_id
+               
+           except Exception as e:
+               logger.error(f"Failed to create order subscription: {e}")
+               raise
+               
+       async def subscribe_to_menu_updates(
+           self, 
+           restaurant_id: str, 
+           callback: Callable[[Dict], None],
+           user_token: str
+       ) -> str:
+           """Subscribe to real-time menu updates"""
+           
+           subscription_id = f"menu_{restaurant_id}_{datetime.now().timestamp()}"
+           
+           try:
+               subscription = self.supabase_client.client.table('menu_items')\
+                   .on('*')\
+                   .filter('restaurant_id', 'eq', restaurant_id)\
+                   .subscribe(
+                       callback=lambda payload: self._handle_menu_update(payload, callback),
+                       headers={"Authorization": f"Bearer {user_token}"}
+                   )
+               
+               self.active_subscriptions[subscription_id] = subscription
+               logger.info(f"Created menu subscription: {subscription_id}")
+               return subscription_id
+               
+           except Exception as e:
+               logger.error(f"Failed to create menu subscription: {e}")
+               raise
+               
+       async def subscribe_to_table_status(
+           self, 
+           restaurant_id: str, 
+           callback: Callable[[Dict], None],
+           user_token: str
+       ) -> str:
+           """Subscribe to real-time table status updates"""
+           
+           subscription_id = f"tables_{restaurant_id}_{datetime.now().timestamp()}"
+           
+           try:
+               subscription = self.supabase_client.client.table('tables')\
+                   .on('*')\
+                   .filter('restaurant_id', 'eq', restaurant_id)\
+                   .subscribe(
+                       callback=lambda payload: self._handle_table_update(payload, callback),
+                       headers={"Authorization": f"Bearer {user_token}"}
+                   )
+               
+               self.active_subscriptions[subscription_id] = subscription
+               logger.info(f"Created table subscription: {subscription_id}")
+               return subscription_id
+               
+           except Exception as e:
+               logger.error(f"Failed to create table subscription: {e}")
+               raise
+               
+       def _handle_order_update(self, payload: Dict, callback: Callable):
+           """Handle order update with error handling and data transformation"""
+           try:
+               event_type = payload.get('eventType')
+               new_record = payload.get('new', {})
+               old_record = payload.get('old', {})
+               
+               processed_data = {
+                   'type': 'order_update',
+                   'event': event_type,
+                   'order_id': new_record.get('id') or old_record.get('id'),
+                   'status': new_record.get('status'),
+                   'restaurant_id': new_record.get('restaurant_id'),
+                   'customer_id': new_record.get('customer_id'),
+                   'total_amount': new_record.get('total_amount'),
+                   'updated_at': new_record.get('updated_at'),
+                   'timestamp': datetime.utcnow().isoformat()
+               }
+               
+               # Execute callback in thread pool to avoid blocking
+               asyncio.create_task(self._execute_callback(callback, processed_data))
+               
+           except Exception as e:
+               logger.error(f"Error processing order update: {e}")
+               
+       def _handle_menu_update(self, payload: Dict, callback: Callable):
+           """Handle menu update with optimization"""
+           try:
+               event_type = payload.get('eventType')
+               new_record = payload.get('new', {})
+               old_record = payload.get('old', {})
+               
+               processed_data = {
+                   'type': 'menu_update',
+                   'event': event_type,
+                   'item_id': new_record.get('id') or old_record.get('id'),
+                   'name': new_record.get('name'),
+                   'price': new_record.get('price'),
+                   'availability': new_record.get('is_available'),
+                   'restaurant_id': new_record.get('restaurant_id'),
+                   'timestamp': datetime.utcnow().isoformat()
+               }
+               
+               asyncio.create_task(self._execute_callback(callback, processed_data))
+               
+           except Exception as e:
+               logger.error(f"Error processing menu update: {e}")
+               
+       def _handle_table_update(self, payload: Dict, callback: Callable):
+           """Handle table status update"""
+           try:
+               event_type = payload.get('eventType')
+               new_record = payload.get('new', {})
+               old_record = payload.get('old', {})
+               
+               processed_data = {
+                   'type': 'table_update',
+                   'event': event_type,
+                   'table_id': new_record.get('id') or old_record.get('id'),
+                   'table_number': new_record.get('table_number'),
+                   'status': new_record.get('status'),
+                   'restaurant_id': new_record.get('restaurant_id'),
+                   'timestamp': datetime.utcnow().isoformat()
+               }
+               
+               asyncio.create_task(self._execute_callback(callback, processed_data))
+               
+           except Exception as e:
+               logger.error(f"Error processing table update: {e}")
+               
+       async def _execute_callback(self, callback: Callable, data: Dict):
+           """Execute callback with error handling"""
+           try:
+               if asyncio.iscoroutinefunction(callback):
+                   await callback(data)
+               else:
+                   callback(data)
+           except Exception as e:
+               logger.error(f"Callback execution failed: {e}")
+               
+       async def unsubscribe(self, subscription_id: str):
+           """Unsubscribe from real-time updates"""
+           if subscription_id in self.active_subscriptions:
+               try:
+                   subscription = self.active_subscriptions[subscription_id]
+                   subscription.unsubscribe()
+                   del self.active_subscriptions[subscription_id]
+                   
+                   # Remove from connection pools
+                   for restaurant_id, connections in self.connection_pools.items():
+                       if subscription_id in connections:
+                           connections.remove(subscription_id)
+                           break
+                   
+                   logger.info(f"Unsubscribed: {subscription_id}")
+               except Exception as e:
+                   logger.error(f"Error unsubscribing {subscription_id}: {e}")
+                   
+       async def unsubscribe_all(self):
+           """Unsubscribe from all active subscriptions"""
+           subscription_ids = list(self.active_subscriptions.keys())
+           for subscription_id in subscription_ids:
+               await self.unsubscribe(subscription_id)
+                   
+       def get_active_subscriptions(self) -> Dict[str, int]:
+           """Get count of active subscriptions by restaurant"""
+           restaurant_counts = {}
+           for restaurant_id, connections in self.connection_pools.items():
+               restaurant_counts[restaurant_id] = len(connections)
+           return restaurant_counts
+   ```
+
+**Phase 3: Performance Optimization and Caching**
+
+1. **Query Optimization and Caching Layer**:
+   ```python
+   # app/features/supabase/query_optimizer.py
+   import asyncio
+   import json
+   import hashlib
+   from typing import Dict, List, Any, Optional, Tuple
+   from datetime import datetime, timedelta
+   import redis
+   from dataclasses import dataclass
+   
+   @dataclass
+   class QueryCache:
+       key: str
+       data: Any
+       ttl: int
+       created_at: datetime
+       
+   class SupabaseQueryOptimizer:
+       def __init__(self, supabase_client, redis_client):
+           self.supabase_client = supabase_client
+           self.redis_client = redis_client
+           self.default_ttl = 300  # 5 minutes
+           self.query_cache: Dict[str, QueryCache] = {}
+           
+       def _generate_cache_key(self, table: str, query_params: Dict) -> str:
+           """Generate unique cache key for query"""
+           query_string = json.dumps(query_params, sort_keys=True)
+           query_hash = hashlib.sha256(query_string.encode()).hexdigest()[:16]
+           return f"supabase_query:{table}:{query_hash}"
+           
+       async def get_with_cache(
+           self, 
+           table: str, 
+           select: str = "*",
+           filters: Dict = None,
+           order: str = None,
+           limit: int = None,
+           ttl: int = None
+       ) -> List[Dict]:
+           """Get data with intelligent caching"""
+           
+           query_params = {
+               'select': select,
+               'filters': filters or {},
+               'order': order,
+               'limit': limit
+           }
+           
+           cache_key = self._generate_cache_key(table, query_params)
+           cache_ttl = ttl or self.default_ttl
+           
+           # Try to get from cache first
+           cached_data = await self._get_from_cache(cache_key)
+           if cached_data is not None:
+               return cached_data
+               
+           # Build query
+           query = self.supabase_client.client.table(table).select(select)
+           
+           # Apply filters
+           if filters:
+               for field, condition in filters.items():
+                   if isinstance(condition, dict):
+                       operator = condition.get('operator', 'eq')
+                       value = condition.get('value')
+                       query = query.filter(field, operator, value)
+                   else:
+                       query = query.filter(field, 'eq', condition)
+           
+           # Apply ordering
+           if order:
+               ascending = not order.startswith('-')
+               field = order.lstrip('-')
+               query = query.order(field, desc=not ascending)
+               
+           # Apply limit
+           if limit:
+               query = query.limit(limit)
+               
+           # Execute query
+           try:
+               result = query.execute()
+               data = result.data
+               
+               # Cache the result
+               await self._set_cache(cache_key, data, cache_ttl)
+               
+               return data
+               
+           except Exception as e:
+               logger.error(f"Supabase query failed: {e}")
+               raise
+               
+       async def get_restaurant_menu_optimized(self, restaurant_id: str) -> List[Dict]:
+           """Optimized menu retrieval with aggressive caching"""
+           
+           # Use longer TTL for menu data (10 minutes)
+           return await self.get_with_cache(
+               table='menu_items',
+               select='id, name, description, price, category_id, is_available, image_url, dietary_info',
+               filters={
+                   'restaurant_id': restaurant_id,
+                   'is_available': True
+               },
+               order='category_id, name',
+               ttl=600
+           )
+           
+       async def get_restaurant_orders_optimized(
+           self, 
+           restaurant_id: str, 
+           status: Optional[str] = None,
+           limit: int = 50
+       ) -> List[Dict]:
+           """Optimized order retrieval with short TTL for real-time data"""
+           
+           filters = {'restaurant_id': restaurant_id}
+           if status:
+               filters['status'] = status
+               
+           # Short TTL for order data (30 seconds)
+           return await self.get_with_cache(
+               table='orders',
+               select='id, order_number, status, total_amount, customer_id, created_at, updated_at',
+               filters=filters,
+               order='-created_at',
+               limit=limit,
+               ttl=30
+           )
+           
+       async def get_customer_order_history(
+           self, 
+           customer_id: str, 
+           restaurant_id: Optional[str] = None,
+           limit: int = 20
+       ) -> List[Dict]:
+           """Get customer order history with caching"""
+           
+           filters = {'customer_id': customer_id}
+           if restaurant_id:
+               filters['restaurant_id'] = restaurant_id
+               
+           return await self.get_with_cache(
+               table='orders',
+               select='id, order_number, restaurant_id, total_amount, status, created_at',
+               filters=filters,
+               order='-created_at',
+               limit=limit,
+               ttl=180  # 3 minutes
+           )
+           
+       async def bulk_update_optimized(
+           self, 
+           table: str, 
+           updates: List[Dict],
+           batch_size: int = 50
+       ) -> List[Dict]:
+           """Optimized bulk update with batching and cache invalidation"""
+           
+           results = []
+           
+           for i in range(0, len(updates), batch_size):
+               batch = updates[i:i + batch_size]
+               
+               try:
+                   # Execute batch update
+                   batch_results = []
+                   for update in batch:
+                       result = self.supabase_client.client.table(table)\
+                           .update(update['data'])\
+                           .eq('id', update['id'])\
+                           .execute()
+                       batch_results.extend(result.data)
+                   
+                   results.extend(batch_results)
+                   
+                   # Invalidate related cache entries
+                   await self._invalidate_table_cache(table)
+                   
+                   # Small delay between batches
+                   if i + batch_size < len(updates):
+                       await asyncio.sleep(0.05)
+                       
+               except Exception as e:
+                   logger.error(f"Bulk update batch failed: {e}")
+                   raise
+                   
+           return results
+           
+       async def _get_from_cache(self, cache_key: str) -> Optional[List[Dict]]:
+           """Get data from Redis cache"""
+           try:
+               cached_json = self.redis_client.get(cache_key)
+               if cached_json:
+                   return json.loads(cached_json)
+               return None
+           except Exception as e:
+               logger.error(f"Cache read error: {e}")
+               return None
+               
+       async def _set_cache(self, cache_key: str, data: List[Dict], ttl: int):
+           """Set data in Redis cache"""
+           try:
+               data_json = json.dumps(data, default=str)
+               self.redis_client.setex(cache_key, ttl, data_json)
+           except Exception as e:
+               logger.error(f"Cache write error: {e}")
+               
+       async def _invalidate_table_cache(self, table: str):
+           """Invalidate all cache entries for a table"""
+           try:
+               pattern = f"supabase_query:{table}:*"
+               keys = self.redis_client.keys(pattern)
+               if keys:
+                   self.redis_client.delete(*keys)
+                   logger.info(f"Invalidated {len(keys)} cache entries for table {table}")
+           except Exception as e:
+               logger.error(f"Cache invalidation error: {e}")
+               
+       async def get_cache_stats(self) -> Dict[str, Any]:
+           """Get cache performance statistics"""
+           try:
+               info = self.redis_client.info()
+               return {
+                   'connected_clients': info.get('connected_clients'),
+                   'used_memory': info.get('used_memory_human'),
+                   'keyspace_hits': info.get('keyspace_hits'),
+                   'keyspace_misses': info.get('keyspace_misses'),
+                   'hit_rate': info.get('keyspace_hits', 0) / max(1, info.get('keyspace_hits', 0) + info.get('keyspace_misses', 0))
+               }
+           except Exception as e:
+               logger.error(f"Error getting cache stats: {e}")
+               return {}
+   ```
+
+**Success Criteria**:
+- ✅ Optimized Supabase client with connection pooling
+- ✅ Comprehensive RLS policies for multi-tenant security
+- ✅ Real-time subscription management with connection limits
+- ✅ Query optimization with intelligent caching (Redis)
+- ✅ Bulk operations with batching for performance
+- ✅ Cache invalidation strategies
+- ✅ Performance monitoring and statistics
+- ✅ Error handling and retry mechanisms
+
+**Deliverables**:
+1. Optimized Supabase client with async connection pooling
+2. Complete RLS policy implementation for multi-tenant security
+3. Real-time subscription management system
+4. Query optimization layer with Redis caching
+5. Bulk operation optimization with batching
+6. Performance monitoring and cache statistics
+7. Error handling and retry mechanisms
+8. Database indexing strategy for optimal performance

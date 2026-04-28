@@ -1,0 +1,54 @@
+Please perform a comprehensive review and implementation in yolo mode of the authentication system feature as specified in `docs/stories/story-1.0-authentication-system.md`. Complete the following tasks in order:
+
+**1. Code Review & Implementation:**
+- Review all authentication-related code in both backend (`apps/backend/app/features/auth/`) and frontend (`apps/frontend/lib/features/auth/`)
+- Identify and fix any bugs, inconsistencies, or incomplete implementations
+- Ensure proper error handling and validation throughout the authentication flow
+- Verify that the code follows the established architectural patterns (vertical slice architecture for backend, GetX pattern for frontend)
+- Check for proper implementation of multi-tenant authentication with restaurant context
+- Validate JWT token handling and refresh mechanisms
+
+**2. Supabase Configuration:**
+- Set up and configure all necessary Supabase authentication settings
+- Ensure proper RLS (Row Level Security) policies are in place for multi-tenant data isolation
+- Configure authentication providers (email/password, social providers as specified)
+- Verify JWT token configuration and validation
+- Implement custom JWT claims for restaurant context (`restaurant_id`, `role`)
+- Ensure proper service role vs user role token usage
+
+**3. End-to-End Integration:**
+- Ensure seamless integration between Flutter frontend and FastAPI backend
+- Verify that authentication tokens are properly passed via `Authorization: Bearer` headers
+- Test user registration, login, logout, and session management flows
+- Confirm that protected routes and role-based access control work correctly
+- Validate restaurant staff authentication with proper role permissions (owner, manager, kitchen, service)
+- Test customer authentication flows (phone/OTP) and anonymous QR access
+- Ensure proper token refresh handling across both frontend and backend
+
+**4. Code Organization:**
+- Ensure proper separation of concerns across domain, application, infrastructure, and presentation layers
+- Verify that dependencies are properly injected and managed using FastAPI's dependency injection
+- Check that error handling is consistent across all layers
+- Validate proper use of Pydantic models for request/response validation
+- Ensure GetX controllers and services are properly structured in the frontend
+
+**5. Quality Assurance:**
+- Write and run comprehensive tests for all authentication functionality using pytest (backend) and Flutter test (frontend)
+- Test edge cases, error scenarios, and security vulnerabilities
+- Verify that the authentication system works across different environments (development, staging)
+- Perform manual testing of the complete user authentication journey
+- Test multi-tenant isolation to ensure restaurant data separation
+- Validate token expiration and refresh scenarios
+
+**6. Rapid Testing ("YOLO Mode"):**
+- Implement quick smoke tests to verify core functionality
+- Test the most critical authentication paths with minimal setup
+- Ensure the system can handle basic authentication scenarios reliably
+- Create simple integration tests for the happy path flows
+
+**Deliverables:**
+- Fix all identified issues in the authentication implementation
+- Provide detailed feedback on any issues found and the steps taken to resolve them
+- Ensure all acceptance criteria from the story are met
+- Document any architectural decisions or changes made
+- Provide test results and coverage reports

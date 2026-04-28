@@ -1,0 +1,391 @@
+
+  I need you to review, validate, and improve our existing authentication system implementation to ensure a complete, working user flow across our ZERGO QR
+  restaurant ordering platform, with specific focus on Flutter frontend issues and UI/UX problems.
+
+  ## 📋 Current Status & Known Issues
+
+  ### Previously Identified Backend Issues:
+
+  #### 1. Authentication Bypass in Tests
+  **Location:** `apps/backend/app/features/auth/presentation/supabase_dependencies.py` (lines 72-80)
+  **Issue:** Authentication bypass is commented out but still present in development mode
+  **Impact:** Security vulnerability, auth not properly tested
+  **Fix Required:** Remove bypass completely or ensure it's only enabled with explicit flags
+
+  #### 2. Dual Authentication Pattern in Frontend
+  **Issue:** Frontend makes both direct Supabase calls AND backend API calls
+  **Location:**
+  - Direct calls: `apps/frontend/lib/features/auth/application/supabase_auth_controller.dart` ( `_supabase.auth.signInWithPassword`)
+  - Backend calls: `apps/frontend/lib/features/auth/infrastructure/supabase_auth_service.dart`
+  **Impact:** Confusing architecture, inconsistent state management
+  **Fix Required:** Choose primary auth method (recommended: Direct-to-Supabase)
+
+  #### 3. Missing Token Synchronization
+  **Issue:** Backend validates JWT tokens but doesn't sync with frontend state
+  **Impact:** State inconsistencies between 
+   and backend
+  **Fix Required:** Proper token validation and state synchronization
+
+  #### 4. Incomplete Database Integration
+  **Issues:**
+  - Missing RLS policies for user data access
+  - Database functions for anonymous session validation not implemented
+  - User metadata not properly synchronized
+  **Fix Required:** Add missing database functions and RLS policies
+
+  #### 5. API Inconsistencies
+  **Issues:**
+  - Backend auth endpoints return different data structures than frontend expects
+  - Missing proper error handling for auth failures
+  - No unified auth response format
+  **Fix Required:** Standardize API responses and error handling
+
+  #### 6. Frontend-Backend Bridge Issues
+  **Issues:**
+  - Frontend `SupabaseAuthService` doesn't handle token refresh
+  - No proper error mapping between backend and frontend
+  - Missing integration with GetX state management
+  **Fix Required:** Proper bridge implementation with error handling
+
+  ### 🔍 Newly Identified Flutter Frontend Issues:
+
+  #### 7. Theme Mode Issues
+  **Problem:** Light mode not available, only dark mode working
+  **Impact:** Poor user experience in different lighting conditions
+  **Files to Check:**
+  - `apps/frontend/lib/core/theme/app_theme.dart`
+  - `apps/frontend/lib/core/theme/app_colors.dart`
+  - `apps/frontend/lib/main.dart`
+  - `apps/frontend/lib/features/auth/presentation/auth_screen.dart`
+
+  **Fix Required:**
+  - Implement proper theme switching between light and dark modes
+  - Ensure all UI components respect theme changes
+  - Fix color combinations for both modes
+
+  #### 8. Color Scheme Issues
+  **Current Problems:**
+  - Buttons not properly styled for visibility in both themes
+  - Font colors not optimized for contrast
+  - Background colors not adapting to theme changes
+  - Input fields not clearly visible in light mode
+  - Error messages not properly colored
+
+  **Files to Review:**
+  - `apps/frontend/lib/core/theme/app_colors.dart`
+  - `apps/frontend/lib/shared/widgets/enhanced_button.dart`
+  - `apps/frontend/lib/features/auth/presentation/auth_screen.dart`
+  - `apps/frontend/lib/core/theme/app_typography.dart`
+
+  **Required Fixes:**
+  - Define proper color palette for both light and dark themes
+  - Ensure text has proper contrast ratios (WCAG compliance)
+  - Make button colors accessible in both themes
+  - Fix input field borders and placeholder colors
+  - Standardize error message colors across components
+
+  #### 9. Flutter Auth Implementation Issues
+  **Specific Problems:**
+  - Form validation not working properly
+  - Loading states not consistently shown
+  - Error messages not displaying correctly
+  - Keyboard navigation issues
+  - Responsive design breaking on different screen sizes
+  - OTP input fields not properly styled
+  - Password visibility toggle not working
+  - Form submission handling errors
+
+  **Files to Fix:**
+  - `apps/frontend/lib/features/auth/presentation/auth_screen.dart`
+  - `apps/frontend/lib/features/auth/presentation/widgets/`
+  - `apps/frontend/lib/features/auth/application/supabase_auth_controller.dart`
+
+  #### 10. State Management Issues
+  **Problems:**
+  - GetX reactive state not updating UI properly
+  - Loading states not managed consistently
+  - Error states not cleared properly
+  - User context not maintained across screens
+  - Form state not properly reset after logout
+
+  ## 🎯 Detailed Task Breakdown for AI Agent
+
+  ### Task 1: Backend Authentication System Review
+  **Priority:** Critical
+  **Files:**
+  - `apps/backend/app/features/auth/presentation/supabase_auth_router.py`
+  - `apps/backend/app/features/auth/presentation/supabase_dependencies.py`
+  - `apps/backend/app/features/auth/presentation/supabase_auth_router.py`
+
+  **Actions:**
+  1. Remove authentication bypass completely from `supabase_dependencies.py`
+  2. Validate all auth endpoints follow documented API spec
+  3. Ensure UserContext class has proper role hierarchy implementation
+  4. Check JWT validation uses Supabase correctly
+  5. Verify error handling provides consistent responses
+  6. Test all auth endpoints with proper authentication
+
+  **Success Criteria:**
+  - ✅ No authentication bypass code remains
+  - ✅ All auth endpoints properly validate tokens
+  - ✅ Role-based access control working
+  - ✅ Error responses standardized
+
+  ### Task 2: Flutter Theme System Implementation
+  **Priority:** Critical
+  **Files:**
+  - `apps/frontend/lib/core/theme/app_theme.dart`
+  - `apps/frontend/lib/core/theme/app_colors.dart`
+  - `apps/frontend/lib/core/theme/app_typography.dart`
+  - `apps/frontend/lib/main.dart`
+
+  **Actions:**
+  1. Implement proper ThemeMode switching (light/dark/system)
+  2. Define complete color palette for both themes
+  3. Ensure proper contrast ratios for accessibility
+  4. Create theme-aware widgets and components
+  5. Test theme switching functionality
+  6. Verify all colors work in both themes
+
+  **Color Requirements:**
+  - Primary colors: Consistent branding across themes
+  - Background colors: Proper contrast and readability
+  - Text colors: WCAG AA compliant contrast ratios
+  - Button colors: Accessible and clearly interactive
+  - Error colors: Consistent and attention-grabbing
+  - Input field colors: Clear borders and placeholders
+
+  **Success Criteria:**
+  - ✅ Light mode works perfectly
+  - ✅ Dark mode works perfectly
+  - ✅ Theme switching works instantly
+  - ✅ All text is readable in both themes
+  - ✅ Colors are accessible and consistent
+
+  ### Task 3: Flutter Auth Screen Redesign
+  **Priority:** High
+  **Files:**
+  - `apps/frontend/lib/features/auth/presentation/auth_screen.dart`
+  - `apps/frontend/lib/features/auth/presentation/widgets/`
+  - `apps/frontend/lib/shared/widgets/enhanced_button.dart`
+
+  **Actions:**
+  1. Redesign auth screen with proper theme support
+  2. Fix form validation and error handling
+  3. Implement consistent loading states
+  4. Add proper keyboard navigation
+  5. Ensure responsive design works on all screen sizes
+  6. Style OTP input fields properly
+  7. Fix password visibility toggle
+  8. Add proper input field decorations
+
+  **UI Requirements:**
+  - Clean, modern design that works in both themes
+  - Proper spacing and alignment
+  - Accessible form labels and inputs
+  - Clear error messages and validation feedback
+  - Consistent button styling and states
+  - Proper loading indicators
+
+  **Success Criteria:**
+  - ✅ Auth screen looks great in both themes
+  - ✅ Form validation works perfectly
+  - ✅ All interactive elements function properly
+  - ✅ Responsive design works on all devices
+  - ✅ Loading and error states handled well
+
+  ### Task 4: Flutter State Management Fixes
+  **Priority:** High
+  **Files:**
+  - `apps/frontend/lib/features/auth/application/supabase_auth_controller.dart`
+  - `apps/frontend/lib/features/auth/application/auth_binding.dart`
+  - `apps/frontend/lib/core/services/auth_service.dart`
+
+  **Actions:**
+  1. Fix GetX reactive state management
+  2. Ensure proper state updates on auth changes
+  3. Fix loading state management
+  4. Implement proper error state handling
+  5. Ensure user context persists across screens
+  6. Fix form state management and reset
+  7. Test state transitions thoroughly
+
+  **State Management Requirements:**
+  - Reactive updates to UI on state changes
+  - Proper initialization and disposal
+  - Clean separation of concerns
+  - Testable state logic
+  - Proper error propagation
+
+  **Success Criteria:**
+  - ✅ State changes update UI immediately
+  - ✅ Loading states show/hide properly
+  - ✅ Error states display and clear correctly
+  - ✅ User context maintained across app
+  - ✅ Form state managed properly
+
+  ### Task 5: Database Integration & Functions
+  **Priority:** High
+  **Files:**
+  - `infra/supabase/migrations/` (latest migration files)
+  - `apps/backend/app/core/database.py`
+
+  **Actions:**
+  1. Implement missing `validate_anonymous_session()` database function
+  2. Add proper RLS policies for restaurant data isolation
+  3. Verify user profile management functions exist
+  4. Check foreign key constraints for auth-related tables
+  5. Ensure session cleanup procedures are implemented
+  6. Test all database functions work correctly
+
+  **Success Criteria:**
+  - ✅ All database functions implemented
+  - ✅ RLS policies working correctly
+  - ✅ User data properly isolated
+  - ✅ Session management working
+
+  ### Task 6: API Integration & Testing
+  **Priority:** Medium
+  **Files:**
+  - `apps/backend/tests/integration/run_restaurant_api_tests.py`
+  - `scripts/dev/simple_api_test.sh`
+  - `apps/frontend/lib/core/services/api_service.dart`
+
+  **Actions:**
+  1. Remove authentication bypass from test dependencies
+  2. Validate protected endpoints require proper authentication
+  3. Ensure role-based access control works in tests
+  4. Check error responses match frontend expectations
+  5. Verify token validation works in integration tests
+  6. Test API integration with Flutter frontend
+
+  **Success Criteria:**
+  - ✅ All tests pass with real authentication
+  - ✅ API endpoints properly protected
+  - ✅ Error responses consistent
+  - ✅ Integration tests working
+
+  ### Task 7: End-to-End Flow Validation
+  **Priority:** Critical
+  **Flows to Test:**
+
+  #### 7.1 Restaurant Staff Authentication Flow
+  1. Staff enters email/password in Flutter app
+  2. Frontend calls `supabase.auth.signInWithPassword()`
+  3. Backend validates JWT token via `get_current_user()`
+  4. User gains access to restaurant dashboard
+
+  #### 7.2 Customer Phone OTP Authentication Flow
+  1. Customer enters phone number
+  2. Frontend calls `supabase.auth.signInWithOtp()`
+  3. Customer receives and enters OTP
+  4. Frontend calls `supabase.auth.verifyOTP()`
+  5. Backend validates token and creates customer profile
+
+  #### 7.3 Anonymous QR Session Flow
+  1. Customer scans QR code at restaurant table
+  2. Frontend creates anonymous session via backend API
+  3. Backend validates QR token and creates session context
+  4. Customer gains limited access for menu browsing
+
+  #### 7.4 Token Management Flow
+  1. User authentication token expires
+  2. Supabase SDK automatically refreshes token
+  3. Backend continues to accept refreshed tokens
+  4. User experience remains uninterrupted
+
+  #### 7.5 Theme Switching Flow
+  1. User switches between light/dark themes
+  2. All UI components update immediately
+  3. Colors remain accessible and readable
+  4. No visual glitches or inconsistencies
+
+  **Success Criteria:**
+  - ✅ All authentication flows work perfectly
+  - ✅ Theme switching works seamlessly
+  - ✅ No visual bugs in either theme
+  - ✅ User experience is smooth and intuitive
+
+  ### Task 8: Security & Performance Optimization
+  **Priority:** Medium
+  **Actions:**
+  1. Remove all hardcoded credentials or tokens
+  2. Ensure proper token storage using Flutter Secure Storage
+  3. Implement proper input validation and sanitization
+  4. Add rate limiting to auth endpoints
+  5. Optimize image loading and animations
+  6. Ensure fast login times (< 2 seconds)
+  7. Implement proper error logging and monitoring
+
+  **Success Criteria:**
+  - ✅ No security vulnerabilities
+  - ✅ Fast loading times
+  - ✅ Proper error handling
+  - ✅ Secure token storage
+
+  ## 🎯 Expected Deliverables
+
+  ### 1. Complete Issues Report
+  - Detailed list of all found issues with severity levels
+  - Specific file locations and line numbers
+  - Impact analysis and recommended fixes
+  - UI/UX issues with screenshots or descriptions
+
+  ### 2. Backend Authentication Fixes
+  - Clean authentication implementation
+  - Proper JWT validation
+  - Role-based access control
+  - Database functions and RLS policies
+
+  ### 3. Flutter Frontend Overhaul
+  - Complete theme system implementation
+  - Redesigned auth screen with proper styling
+  - Fixed state management
+  - Responsive design that works on all devices
+  - Proper color schemes for both themes
+
+  ### 4. Integration Validation
+  - End-to-end flow testing results
+  - API integration validation
+  - Security verification
+  - Performance benchmarks
+
+  ### 5. Production Readiness Package
+  - All development bypasses removed
+  - Proper error handling implemented
+  - Security measures validated
+  - Complete documentation
+  - Testing coverage reports
+
+  ## 📋 Final Success Criteria
+
+  ### Authentication System:
+  ✅ All auth methods work flawlessly (email, phone, anonymous)
+  ✅ Token validation and refresh mechanisms work seamlessly
+  ✅ Role-based access control enforced across all endpoints
+  ✅ Protected APIs properly validate user context
+  ✅ Anonymous QR sessions function for ordering
+  ✅ User state properly synchronized across components
+
+  ### Flutter UI/UX:
+  ✅ Light and dark themes work perfectly
+  ✅ All colors are accessible and consistent
+  ✅ Auth screen is modern and user-friendly
+  ✅ Form validation works with clear feedback
+  ✅ Responsive design works on all screen sizes
+  ✅ Loading states and error handling are smooth
+
+  ### Technical Quality:
+  ✅ No authentication bypass code remains
+  ✅ Clean architecture maintained throughout
+  ✅ Type-safe implementation with proper error handling
+  ✅ Security best practices followed
+  ✅ Performance standards met
+  ✅ Code well-documented and maintainable
+
+  ### User Experience:
+  ✅ Seamless authentication experience
+  ✅ Beautiful UI that works in both themes
+  ✅ Intuitive navigation based on user roles
+  ✅ Fast loading times and responsive interactions
+  ✅ Clear error messages and recovery paths

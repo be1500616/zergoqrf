@@ -1,0 +1,90 @@
+`**Task: Complete Story 6.4 Transaction Management Implementation and Testing**
+
+**Phase 1: Story Analysis and Implementation Review**
+1. Read and analyze the requirements in `docs/stories/story-6.4-transaction-management.md`
+2. Use codebase-retrieval to examine the current transaction management implementation across the entire codebase
+3. Identify what functionality has been implemented vs. what remains to be completed according to the story requirements
+4. Complete any missing implementation to fulfill all story 6.4 requirements (do not modify existing working code unless necessary)
+5. Ensure restaurant interface properly handles both digital payments and cash/pay-at-restaurant scenarios
+6. Ensure all the endpoints are working and is fully function perform curl command request reponse validation.
+
+**Phase 2: Comprehensive Testing with Supabase MCP**
+1. Use the Supabase MCP tools to test all transaction-related database operations
+2. Create a systematic test plan covering:
+   - Transaction creation and initialization (digital and cash payments)
+   - Payment processing workflows (online payment gateway integration)
+   - Cash/pay-at-restaurant transaction handling
+   - Transaction status updates (pending, processing, completed, failed, cancelled)
+   - Payment confirmation and receipt generation
+   - Transaction history and retrieval
+   - Refund and cancellation processing
+   - Edge cases (payment failures, network timeouts, duplicate transactions)
+   - Multi-user transaction isolation and concurrency handling
+   - Restaurant staff transaction management interface
+
+**Phase 3: API Endpoint Testing with cURL**
+1. Test all transaction-related API endpoints using curl commands with proper authentication
+2. Verify request-response structure for each endpoint:
+   - POST /transactions (create/initialize transaction)
+   - GET /transactions/{transaction_id} (retrieve transaction details)
+   - PUT /transactions/{transaction_id}/status (update transaction status)
+   - POST /transactions/{transaction_id}/payment (process payment)
+   - POST /transactions/{transaction_id}/confirm (confirm cash payment at restaurant)
+   - GET /transactions (list user transactions with filtering)
+   - POST /transactions/{transaction_id}/refund (process refund)
+   - DELETE /transactions/{transaction_id} (cancel transaction)
+   - GET /restaurant/transactions (restaurant staff transaction management)
+   - PUT /restaurant/transactions/{transaction_id}/cash-confirm (restaurant confirms cash payment)
+3. Test with various scenarios: valid data, invalid data, edge cases, authentication failures, payment gateway responses
+4. Test both customer-facing and restaurant staff interfaces for transaction management
+
+**Phase 4: Comprehensive Test Report**
+Create a detailed report including:
+- Story 6.4 completion status (what was implemented vs. requirements)
+- Database operation test results (using Supabase MCP)
+- API endpoint test results (using curl)
+- Payment gateway integration testing results
+- Cash/pay-at-restaurant workflow validation
+- Restaurant staff interface functionality verification
+- Any bugs, issues, or failures discovered
+- Performance observations (response times, payment processing speed)
+- Security validation (authentication, authorization, payment data protection)
+- Recommendations for fixes or improvements
+
+**Authentication Context**: Use the existing test credentials from the restaurant management system (`test@gmail.com`/`test1234` for restaurant staff and `customer@gmail.com`/`customer1234` for customer operations) for testing authenticated transaction operations.
+
+**Phase 3 Requirements:**
+1. **Create Valid Test Data First**: Use Supabase MCP tools to create proper customer sessions, restaurant staff sessions, and sample orders that can be used for transaction testing
+2. **Test Transaction Creation Endpoints**: Test transaction initialization for both digital payments and cash/pay-at-restaurant scenarios
+3. **Test Payment Processing Endpoints**: Test online payment gateway integration, payment confirmation, and failure handling
+4. **Test Cash Payment Workflows**: Test restaurant staff interface for confirming cash payments, updating order status, and generating receipts
+5. **Test Transaction Management Endpoints**: Test transaction status updates, history retrieval, refund processing, and cancellation workflows
+6. **Test Authentication and Authorization**: Verify that endpoints properly enforce authentication requirements and role-based access (customer vs. restaurant staff)
+7. **Use Proper Test Sequence**: Follow logical transaction flows:
+   - Customer flow: create order → initiate transaction → process payment → confirm completion
+   - Cash flow: create order → select cash payment → restaurant confirms payment → complete transaction
+   - Staff flow: view pending transactions → process cash payments → update order status → generate receipts
+8. **Use Test Credentials**: Use the existing test credentials for both customer and restaurant staff operations
+
+**Phase 4 Requirements:**
+1. **Document Story Completion Status**: Compare final implementation against all acceptance criteria from Story 6.4
+2. **Compile Test Results**: Document all database test results (from Phase 2) and API test results (from Phase 3) including response times, success/failure rates, and payment processing metrics
+3. **Document Cash Payment Workflow**: Specifically validate that restaurant interface properly handles cash/pay-at-restaurant scenarios with proper staff controls and order status management
+4. **Document Issues and Recommendations**: Report any bugs, performance issues, security concerns, payment gateway issues, or areas for improvement discovered during testing
+
+**Validation Approach:**
+- Use Supabase MCP tools to verify database state before and after each transaction operation
+- Cross-validate API responses with direct database queries to ensure transaction data consistency
+- Test error scenarios and edge cases (payment failures, network timeouts, duplicate transactions, invalid payment amounts)
+- Verify that both digital payment and cash/pay-at-restaurant workflows work end-to-end
+- Validate restaurant staff interface can properly manage cash transactions and order fulfillment
+- Test transaction security, data protection, and proper audit logging
+
+**Success Criteria:**
+- All transaction API endpoints respond correctly with proper HTTP status codes
+- Database operations maintain ACID properties and proper transaction isolation
+- Complete payment flows work seamlessly for both digital and cash payment methods
+- Restaurant interface properly handles cash payment confirmation and order management
+- Performance meets Story 6.4 requirements for transaction processing speed and reliability
+- Security requirements are met for payment data protection and user authorization
+- Transaction history and reporting functionality works correctly for both customers and restaurant staff`

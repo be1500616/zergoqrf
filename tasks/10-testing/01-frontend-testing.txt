@@ -1,0 +1,980 @@
+**Task: Comprehensive Frontend Testing Strategy for Flutter Application**
+
+**Objective**: Implement a complete testing framework for the Flutter frontend covering unit tests, widget tests, integration tests, UI automation, performance testing, and accessibility compliance to ensure 99.9% reliability across platforms.
+
+**Phase 1: Unit Testing Framework**
+
+1. **Core Service Unit Tests**:
+   ```dart
+   // test/unit/services/auth_service_test.dart
+   import 'package:flutter_test/flutter_test.dart';
+   import 'package:mockito/mockito.dart';
+   import 'package:mockito/annotations.dart';
+   import 'package:get/get.dart';
+   import 'package:zergo_qr/app/data/services/auth_service.dart';
+   import 'package:zergo_qr/app/data/models/user_model.dart';
+   import 'package:zergo_qr/app/data/providers/supabase_provider.dart';
+   
+   @GenerateMocks([SupabaseProvider])
+   import 'auth_service_test.mocks.dart';
+   
+   void main() {
+     group('AuthService Tests', () {
+       late AuthService authService;
+       late MockSupabaseProvider mockSupabaseProvider;
+       
+       setUp(() {
+         Get.testMode = true;
+         mockSupabaseProvider = MockSupabaseProvider();
+         authService = AuthService();
+         Get.put<SupabaseProvider>(mockSupabaseProvider);
+       });
+       
+       tearDown(() {
+         Get.reset();
+       });
+       
+       group('Login Tests', () {
+         test('should return success when login credentials are valid', () async {
+           // Arrange
+           const email = 'test@example.com';
+           const password = 'password123';
+           final mockUser = UserModel(
+             id: '123',
+             email: email,
+             fullName: 'Test User',
+             phoneNumber: '+1234567890',
+           );
+           
+           when(mockSupabaseProvider.signInWithEmailAndPassword(
+             email: email,
+             password: password,
+           )).thenAnswer((_) async => mockUser);
+           
+           // Act
+           final result = await authService.login(email, password);
+           
+           // Assert
+           expect(result.isSuccess, true);
+           expect(result.data, equals(mockUser));
+           verify(mockSupabaseProvider.signInWithEmailAndPassword(
+             email: email,
+             password: password,
+           )).called(1);
+         });
+         
+         test('should return error when login credentials are invalid', () async {
+           // Arrange
+           const email = 'invalid@example.com';
+           const password = 'wrongpassword';
+           
+           when(mockSupabaseProvider.signInWithEmailAndPassword(
+             email: email,
+             password: password,
+           )).thenThrow(Exception('Invalid credentials'));
+           
+           // Act
+           final result = await authService.login(email, password);
+           
+           // Assert
+           expect(result.isSuccess, false);
+           expect(result.error, contains('Invalid credentials'));
+         });
+         
+         test('should validate email format before login attempt', () async {
+           // Arrange
+           const invalidEmail = 'invalid-email';
+           const password = 'password123';
+           
+           // Act
+           final result = await authService.login(invalidEmail, password);
+           
+           // Assert
+           expect(result.isSuccess, false);
+           expect(result.error, contains('Invalid email format'));
+           verifyNever(mockSupabaseProvider.signInWithEmailAndPassword(
+             email: anyNamed('email'),
+             password: anyNamed('password'),
+           ));
+         });
+       });
+       
+       group('Registration Tests', () {
+         test('should register user successfully with valid data', () async {
+           // Arrange
+           final registrationData = {
+             'email': 'newuser@example.com',
+             'password': 'SecurePass123!',
+             'fullName': 'New User',
+             'phoneNumber': '+1234567890',
+           };
+           
+           final mockUser = UserModel.fromJson({
+             'id': '456',
+             ...registrationData,
+           });
+           
+           when(mockSupabaseProvider.signUp(any))
+               .thenAnswer((_) async => mockUser);
+           
+           // Act
+           final result = await authService.register(registrationData);
+           
+           // Assert
+           expect(result.isSuccess, true);
+           expect(result.data.email, equals(registrationData['email']));
+         });
+         
+         test('should validate password strength during registration', () async {
+           // Arrange
+           final weakPasswordData = {
+             'email': 'user@example.com',
+             'password': '123', // Weak password
+             'fullName': 'Test User',
+           };
+           
+           // Act
+           final result = await authService.register(weakPasswordData);
+           
+           // Assert
+           expect(result.isSuccess, false);
+           expect(result.error, contains('Password must be at least 8 characters'));
+         });
+       });
+       
+       group('Token Management Tests', () {
+         test('should refresh token when expired', () async {
+           // Arrange
+           const expiredToken = 'expired.jwt.token';
+           const newToken = 'new.jwt.token';
+           
+           when(mockSupabaseProvider.refreshToken())
+               .thenAnswer((_) async => newToken);
+           
+           // Act
+           final result = await authService.refreshAuthToken();
+           
+           // Assert
+           expect(result, equals(newToken));
+           verify(mockSupabaseProvider.refreshToken()).called(1);
+         });
+         
+         test('should handle token refresh failure gracefully', () async {
+           // Arrange
+           when(mockSupabaseProvider.refreshToken())
+               .thenThrow(Exception('Token refresh failed'));
+           
+           // Act & Assert
+           expect(
+             () async => await authService.refreshAuthToken(),
+             throwsA(isA<Exception>()),
+           );
+         });
+       });
+     });
+   }
+   ```
+
+2. **Repository Layer Unit Tests**:
+   ```dart
+   // test/unit/data/repositories/menu_repository_test.dart
+   import 'package:flutter_test/flutter_test.dart';
+   import 'package:mockito/mockito.dart';
+   import 'package:mockito/annotations.dart';
+   import 'package:zergo_qr/app/data/repositories/menu_repository.dart';
+   import 'package:zergo_qr/app/data/models/menu_item_model.dart';
+   import 'package:zergo_qr/app/data/providers/api_provider.dart';
+   
+   @GenerateMocks([ApiProvider])
+   import 'menu_repository_test.mocks.dart';
+   
+   void main() {
+     group('MenuRepository Tests', () {
+       late MenuRepository menuRepository;
+       late MockApiProvider mockApiProvider;
+       
+       setUp(() {
+         mockApiProvider = MockApiProvider();
+         menuRepository = MenuRepository(apiProvider: mockApiProvider);
+       });
+       
+       test('should fetch menu items successfully', () async {
+         // Arrange
+         final mockMenuItems = [
+           MenuItemModel(
+             id: '1',
+             name: 'Burger',
+             price: 15.99,
+             category: 'Main Course',
+             description: 'Delicious burger',
+             imageUrl: 'https://example.com/burger.jpg',
+             isAvailable: true,
+           ),
+           MenuItemModel(
+             id: '2',
+             name: 'Pizza',
+             price: 18.99,
+             category: 'Main Course',
+             description: 'Tasty pizza',
+             imageUrl: 'https://example.com/pizza.jpg',
+             isAvailable: true,
+           ),
+         ];
+         
+         when(mockApiProvider.get('/menu-items'))
+             .thenAnswer((_) async => mockMenuItems.map((e) => e.toJson()).toList());
+         
+         // Act
+         final result = await menuRepository.getMenuItems();
+         
+         // Assert
+         expect(result.length, equals(2));
+         expect(result.first.name, equals('Burger'));
+         expect(result.last.name, equals('Pizza'));
+         verify(mockApiProvider.get('/menu-items')).called(1);
+       });
+       
+       test('should handle API errors gracefully', () async {
+         // Arrange
+         when(mockApiProvider.get('/menu-items'))
+             .thenThrow(Exception('Network error'));
+         
+         // Act & Assert
+         expect(
+           () async => await menuRepository.getMenuItems(),
+           throwsA(isA<Exception>()),
+         );
+       });
+       
+       test('should cache menu items for offline access', () async {
+         // Arrange
+         final mockMenuItems = [
+           MenuItemModel(
+             id: '1',
+             name: 'Cached Burger',
+             price: 15.99,
+             category: 'Main Course',
+             description: 'Cached item',
+             imageUrl: 'https://example.com/burger.jpg',
+             isAvailable: true,
+           ),
+         ];
+         
+         when(mockApiProvider.get('/menu-items'))
+             .thenAnswer((_) async => mockMenuItems.map((e) => e.toJson()).toList());
+         
+         // Act
+         await menuRepository.getMenuItems();
+         
+         // Simulate offline - API call fails
+         when(mockApiProvider.get('/menu-items'))
+             .thenThrow(Exception('No internet'));
+         
+         final cachedResult = await menuRepository.getCachedMenuItems();
+         
+         // Assert
+         expect(cachedResult.length, equals(1));
+         expect(cachedResult.first.name, equals('Cached Burger'));
+       });
+     });
+   }
+   ```
+
+**Phase 2: Widget Testing**
+
+1. **Component Widget Tests**:
+   ```dart
+   // test/widget/components/menu_item_card_test.dart
+   import 'package:flutter/material.dart';
+   import 'package:flutter_test/flutter_test.dart';
+   import 'package:get/get.dart';
+   import 'package:zergo_qr/app/modules/menu/widgets/menu_item_card.dart';
+   import 'package:zergo_qr/app/data/models/menu_item_model.dart';
+   
+   void main() {
+     group('MenuItemCard Widget Tests', () {
+       late MenuItemModel testMenuItem;
+       
+       setUp(() {
+         testMenuItem = MenuItemModel(
+           id: '1',
+           name: 'Test Burger',
+           price: 15.99,
+           category: 'Main Course',
+           description: 'A delicious test burger with all the fixings',
+           imageUrl: 'https://example.com/burger.jpg',
+           isAvailable: true,
+         );
+       });
+       
+       testWidgets('should display menu item information correctly', (tester) async {
+         // Arrange
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: MenuItemCard(menuItem: testMenuItem),
+             ),
+           ),
+         );
+         
+         // Act & Assert
+         expect(find.text('Test Burger'), findsOneWidget);
+         expect(find.text('\$15.99'), findsOneWidget);
+         expect(find.text('A delicious test burger with all the fixings'), 
+                findsOneWidget);
+         expect(find.byType(Image), findsOneWidget);
+       });
+       
+       testWidgets('should show unavailable state when item is not available', 
+           (tester) async {
+         // Arrange
+         testMenuItem = testMenuItem.copyWith(isAvailable: false);
+         
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: MenuItemCard(menuItem: testMenuItem),
+             ),
+           ),
+         );
+         
+         // Assert
+         expect(find.text('Unavailable'), findsOneWidget);
+         expect(find.byType(Opacity), findsOneWidget);
+       });
+       
+       testWidgets('should trigger onTap callback when tapped', (tester) async {
+         // Arrange
+         bool wasTapped = false;
+         
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: MenuItemCard(
+                 menuItem: testMenuItem,
+                 onTap: () => wasTapped = true,
+               ),
+             ),
+           ),
+         );
+         
+         // Act
+         await tester.tap(find.byType(MenuItemCard));
+         await tester.pump();
+         
+         // Assert
+         expect(wasTapped, true);
+       });
+       
+       testWidgets('should handle long text gracefully', (tester) async {
+         // Arrange
+         testMenuItem = testMenuItem.copyWith(
+           name: 'Super Long Menu Item Name That Should Wrap Properly',
+           description: 'This is a very long description that should wrap to multiple lines and not overflow the widget boundaries',
+         );
+         
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: MenuItemCard(menuItem: testMenuItem),
+             ),
+           ),
+         );
+         
+         // Act & Assert - Should not have overflow
+         expect(tester.takeException(), isNull);
+       });
+       
+       testWidgets('should display loading state when image is loading', 
+           (tester) async {
+         // Arrange
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: MenuItemCard(menuItem: testMenuItem),
+             ),
+           ),
+         );
+         
+         // Assert - Loading indicator should be present initially
+         expect(find.byType(CircularProgressIndicator), findsOneWidget);
+       });
+       
+       testWidgets('should be accessible with proper semantics', (tester) async {
+         // Arrange
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: MenuItemCard(menuItem: testMenuItem),
+             ),
+           ),
+         );
+         
+         // Assert - Check for accessibility features
+         expect(
+           find.bySemanticsLabel('Menu item: Test Burger, \$15.99'),
+           findsOneWidget,
+         );
+         
+         // Verify tap target size is adequate (at least 48x48)
+         final cardFinder = find.byType(MenuItemCard);
+         final cardWidget = tester.widget<Card>(cardFinder);
+         final cardSize = tester.getSize(cardFinder);
+         expect(cardSize.height, greaterThanOrEqualTo(48.0));
+       });
+     });
+   }
+   ```
+
+2. **Form Widget Tests**:
+   ```dart
+   // test/widget/forms/login_form_test.dart
+   import 'package:flutter/material.dart';
+   import 'package:flutter_test/flutter_test.dart';
+   import 'package:get/get.dart';
+   import 'package:mockito/mockito.dart';
+   import 'package:zergo_qr/app/modules/auth/widgets/login_form.dart';
+   import 'package:zergo_qr/app/modules/auth/controllers/auth_controller.dart';
+   
+   import '../../mocks/auth_controller_mock.dart';
+   
+   void main() {
+     group('LoginForm Widget Tests', () {
+       late MockAuthController mockAuthController;
+       
+       setUp(() {
+         mockAuthController = MockAuthController();
+         Get.put<AuthController>(mockAuthController);
+       });
+       
+       tearDown(() {
+         Get.reset();
+       });
+       
+       testWidgets('should display email and password fields', (tester) async {
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: LoginForm(),
+             ),
+           ),
+         );
+         
+         expect(find.byKey(Key('email_field')), findsOneWidget);
+         expect(find.byKey(Key('password_field')), findsOneWidget);
+         expect(find.byKey(Key('login_button')), findsOneWidget);
+       });
+       
+       testWidgets('should validate email field', (tester) async {
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: LoginForm(),
+             ),
+           ),
+         );
+         
+         // Enter invalid email
+         await tester.enterText(find.byKey(Key('email_field')), 'invalid-email');
+         await tester.tap(find.byKey(Key('login_button')));
+         await tester.pump();
+         
+         expect(find.text('Please enter a valid email'), findsOneWidget);
+       });
+       
+       testWidgets('should validate password field', (tester) async {
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: LoginForm(),
+             ),
+           ),
+         );
+         
+         // Enter valid email but no password
+         await tester.enterText(find.byKey(Key('email_field')), 'test@example.com');
+         await tester.tap(find.byKey(Key('login_button')));
+         await tester.pump();
+         
+         expect(find.text('Password is required'), findsOneWidget);
+       });
+       
+       testWidgets('should call login when form is valid', (tester) async {
+         when(mockAuthController.login(any, any))
+             .thenAnswer((_) async => {});
+         
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: LoginForm(),
+             ),
+           ),
+         );
+         
+         // Enter valid credentials
+         await tester.enterText(find.byKey(Key('email_field')), 'test@example.com');
+         await tester.enterText(find.byKey(Key('password_field')), 'password123');
+         await tester.tap(find.byKey(Key('login_button')));
+         await tester.pump();
+         
+         verify(mockAuthController.login('test@example.com', 'password123'))
+             .called(1);
+       });
+       
+       testWidgets('should show loading state during login', (tester) async {
+         // Mock loading state
+         when(mockAuthController.isLoading).thenReturn(true);
+         
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: LoginForm(),
+             ),
+           ),
+         );
+         
+         expect(find.byType(CircularProgressIndicator), findsOneWidget);
+         expect(find.text('Signing in...'), findsOneWidget);
+       });
+       
+       testWidgets('should toggle password visibility', (tester) async {
+         await tester.pumpWidget(
+           GetMaterialApp(
+             home: Scaffold(
+               body: LoginForm(),
+             ),
+           ),
+         );
+         
+         final passwordField = find.byKey(Key('password_field'));
+         final toggleButton = find.byKey(Key('password_toggle'));
+         
+         // Initially password should be obscured
+         TextFormField passwordWidget = tester.widget(passwordField);
+         expect(passwordWidget.obscureText, true);
+         
+         // Tap toggle button
+         await tester.tap(toggleButton);
+         await tester.pump();
+         
+         // Password should now be visible
+         passwordWidget = tester.widget(passwordField);
+         expect(passwordWidget.obscureText, false);
+       });
+     });
+   }
+   ```
+
+**Phase 3: Integration Testing**
+
+1. **Full App Integration Tests**:
+   ```dart
+   // integration_test/app_test.dart
+   import 'package:flutter/material.dart';
+   import 'package:flutter_test/flutter_test.dart';
+   import 'package:integration_test/integration_test.dart';
+   import 'package:zergo_qr/main.dart' as app;
+   
+   void main() {
+     IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+     
+     group('Complete App Flow Tests', () {
+       testWidgets('User registration and login flow', (tester) async {
+         // Start app
+         app.main();
+         await tester.pumpAndSettle();
+         
+         // Navigate to registration
+         await tester.tap(find.text('Sign Up'));
+         await tester.pumpAndSettle();
+         
+         // Fill registration form
+         await tester.enterText(find.byKey(Key('full_name_field')), 'Test User');
+         await tester.enterText(find.byKey(Key('email_field')), 'test@example.com');
+         await tester.enterText(find.byKey(Key('phone_field')), '+1234567890');
+         await tester.enterText(find.byKey(Key('password_field')), 'SecurePass123!');
+         await tester.enterText(find.byKey(Key('confirm_password_field')), 'SecurePass123!');
+         
+         // Submit registration
+         await tester.tap(find.byKey(Key('register_button')));
+         await tester.pumpAndSettle(Duration(seconds: 5));
+         
+         // Should navigate to verification screen
+         expect(find.text('Verify Your Email'), findsOneWidget);
+         
+         // Simulate email verification (in real test, would use test email)
+         await tester.tap(find.text('Skip for Testing'));
+         await tester.pumpAndSettle();
+         
+         // Should be on home screen
+         expect(find.text('Welcome to ZERGO QR'), findsOneWidget);
+         
+         // Test logout
+         await tester.tap(find.byIcon(Icons.menu));
+         await tester.pumpAndSettle();
+         
+         await tester.tap(find.text('Logout'));
+         await tester.pumpAndSettle();
+         
+         // Should be back to login screen
+         expect(find.text('Sign In'), findsOneWidget);
+         
+         // Test login with registered credentials
+         await tester.enterText(find.byKey(Key('email_field')), 'test@example.com');
+         await tester.enterText(find.byKey(Key('password_field')), 'SecurePass123!');
+         
+         await tester.tap(find.byKey(Key('login_button')));
+         await tester.pumpAndSettle(Duration(seconds: 3));
+         
+         // Should be logged in successfully
+         expect(find.text('Welcome back!'), findsOneWidget);
+       });
+       
+       testWidgets('Menu browsing and ordering flow', (tester) async {
+         // Assume user is already logged in
+         app.main();
+         await tester.pumpAndSettle();
+         
+         // Login first
+         await _performLogin(tester);
+         
+         // Navigate to menu
+         await tester.tap(find.text('Browse Menu'));
+         await tester.pumpAndSettle();
+         
+         // Verify menu items are displayed
+         expect(find.byType(MenuItemCard), findsWidgets);
+         
+         // Add items to cart
+         await tester.tap(find.text('Add to Cart').first);
+         await tester.pumpAndSettle();
+         
+         // Should show "Added to Cart" confirmation
+         expect(find.text('Added to Cart'), findsOneWidget);
+         
+         // Navigate to cart
+         await tester.tap(find.byIcon(Icons.shopping_cart));
+         await tester.pumpAndSettle();
+         
+         // Verify cart has items
+         expect(find.text('Your Order'), findsOneWidget);
+         expect(find.byType(CartItemWidget), findsWidgets);
+         
+         // Proceed to checkout
+         await tester.tap(find.text('Proceed to Checkout'));
+         await tester.pumpAndSettle();
+         
+         // Fill delivery information
+         await tester.enterText(find.byKey(Key('delivery_address')), '123 Test Street');
+         await tester.enterText(find.byKey(Key('special_instructions')), 'No onions please');
+         
+         // Place order
+         await tester.tap(find.text('Place Order'));
+         await tester.pumpAndSettle(Duration(seconds: 5));
+         
+         // Should show order confirmation
+         expect(find.text('Order Placed Successfully'), findsOneWidget);
+         expect(find.textContaining('Order #'), findsOneWidget);
+       });
+       
+       testWidgets('QR code scanning flow', (tester) async {
+         app.main();
+         await tester.pumpAndSettle();
+         
+         await _performLogin(tester);
+         
+         // Navigate to QR scanner
+         await tester.tap(find.byIcon(Icons.qr_code_scanner));
+         await tester.pumpAndSettle();
+         
+         // Should request camera permission (simulated)
+         expect(find.text('Camera Permission Required'), findsOneWidget);
+         
+         await tester.tap(find.text('Grant Permission'));
+         await tester.pumpAndSettle();
+         
+         // Should show QR scanner interface
+         expect(find.byType(QRView), findsOneWidget);
+         expect(find.text('Scan QR Code'), findsOneWidget);
+         
+         // Simulate successful QR scan (in real test, would use test QR code)
+         await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+           'dev.steenbakker.mobile_scanner',
+           Uint8List.fromList('test_qr_data'.codeUnits),
+           (data) {},
+         );
+         
+         await tester.pumpAndSettle();
+         
+         // Should navigate to scanned restaurant/table
+         expect(find.textContaining('Table'), findsOneWidget);
+         expect(find.text('Menu'), findsOneWidget);
+       });
+     });
+   }
+   
+   Future<void> _performLogin(WidgetTester tester) async {
+     await tester.enterText(find.byKey(Key('email_field')), 'test@example.com');
+     await tester.enterText(find.byKey(Key('password_field')), 'SecurePass123!');
+     await tester.tap(find.byKey(Key('login_button')));
+     await tester.pumpAndSettle(Duration(seconds: 3));
+   }
+   ```
+
+**Phase 4: Performance Testing**
+
+1. **Performance Test Configuration**:
+   ```dart
+   // test/performance/performance_test.dart
+   import 'package:flutter/material.dart';
+   import 'package:flutter_test/flutter_test.dart';
+   import 'package:integration_test/integration_test.dart';
+   import 'package:zergo_qr/main.dart' as app;
+   
+   void main() {
+     IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+     
+     group('Performance Tests', () {
+       testWidgets('App startup performance', (tester) async {
+         final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+         
+         // Measure app startup time
+         final stopwatch = Stopwatch()..start();
+         
+         app.main();
+         await tester.pumpAndSettle();
+         
+         stopwatch.stop();
+         
+         // Should start within 3 seconds
+         expect(stopwatch.elapsedMilliseconds, lessThan(3000));
+         
+         // Report performance metrics
+         await binding.reportData(<String, dynamic>{
+           'app_startup_time_ms': stopwatch.elapsedMilliseconds,
+         });
+       });
+       
+       testWidgets('Menu loading performance', (tester) async {
+         final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+         
+         app.main();
+         await tester.pumpAndSettle();
+         
+         // Login and navigate to menu
+         await _performLogin(tester);
+         
+         final stopwatch = Stopwatch()..start();
+         
+         await tester.tap(find.text('Browse Menu'));
+         await tester.pumpAndSettle();
+         
+         stopwatch.stop();
+         
+         // Menu should load within 2 seconds
+         expect(stopwatch.elapsedMilliseconds, lessThan(2000));
+         
+         await binding.reportData(<String, dynamic>{
+           'menu_load_time_ms': stopwatch.elapsedMilliseconds,
+         });
+       });
+       
+       testWidgets('Scroll performance test', (tester) async {
+         final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+         
+         app.main();
+         await tester.pumpAndSettle();
+         
+         await _performLogin(tester);
+         await tester.tap(find.text('Browse Menu'));
+         await tester.pumpAndSettle();
+         
+         // Measure frame times during scrolling
+         await binding.traceAction(() async {
+           final listFinder = find.byType(ListView);
+           
+           // Perform scroll actions
+           for (int i = 0; i < 10; i++) {
+             await tester.fling(listFinder, Offset(0, -300), 1000);
+             await tester.pumpAndSettle();
+           }
+         }, reportKey: 'menu_scroll_performance');
+       });
+       
+       testWidgets('Memory usage test', (tester) async {
+         final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+         
+         app.main();
+         await tester.pumpAndSettle();
+         
+         // Navigate through different screens
+         await _performLogin(tester);
+         
+         for (int i = 0; i < 5; i++) {
+           await tester.tap(find.text('Browse Menu'));
+           await tester.pumpAndSettle();
+           
+           await tester.tap(find.byIcon(Icons.home));
+           await tester.pumpAndSettle();
+           
+           await tester.tap(find.byIcon(Icons.shopping_cart));
+           await tester.pumpAndSettle();
+           
+           await tester.tap(find.byIcon(Icons.home));
+           await tester.pumpAndSettle();
+         }
+         
+         // Memory should not continuously increase
+         // This would be monitored externally in real scenarios
+       });
+     });
+   }
+   ```
+
+**Phase 5: Accessibility Testing**
+
+1. **Accessibility Test Suite**:
+   ```dart
+   // test/accessibility/accessibility_test.dart
+   import 'package:flutter/material.dart';
+   import 'package:flutter_test/flutter_test.dart';
+   import 'package:zergo_qr/app/modules/menu/views/menu_view.dart';
+   import 'package:zergo_qr/app/modules/auth/views/login_view.dart';
+   
+   void main() {
+     group('Accessibility Tests', () {
+       testWidgets('Login screen accessibility', (tester) async {
+         await tester.pumpWidget(
+           MaterialApp(
+             home: LoginView(),
+           ),
+         );
+         
+         // Check for accessibility guidelines
+         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+         await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+         await expectLater(tester, meetsGuideline(textContrastGuideline));
+         
+         // Verify semantic labels
+         expect(
+           find.bySemanticsLabel('Email address input field'),
+           findsOneWidget,
+         );
+         expect(
+           find.bySemanticsLabel('Password input field'),
+           findsOneWidget,
+         );
+         expect(
+           find.bySemanticsLabel('Sign in button'),
+           findsOneWidget,
+         );
+       });
+       
+       testWidgets('Menu screen accessibility', (tester) async {
+         await tester.pumpWidget(
+           MaterialApp(
+             home: MenuView(),
+           ),
+         );
+         
+         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+         await expectLater(tester, meetsGuideline(textContrastGuideline));
+         
+         // Check menu item accessibility
+         final menuItems = find.byType(MenuItemCard);
+         expect(menuItems, findsWidgets);
+         
+         // Each menu item should have proper semantics
+         for (int i = 0; i < tester.widgetList(menuItems).length; i++) {
+           final item = tester.widgetList(menuItems).elementAt(i);
+           expect(
+             find.descendant(
+               of: find.byWidget(item),
+               matching: find.byType(Semantics),
+             ),
+             findsWidgets,
+           );
+         }
+       });
+       
+       testWidgets('Color contrast compliance', (tester) async {
+         await tester.pumpWidget(
+           MaterialApp(
+             home: Scaffold(
+               body: Column(
+                 children: [
+                   Container(
+                     color: Colors.blue,
+                     child: Text(
+                       'Primary Text',
+                       style: TextStyle(color: Colors.white),
+                     ),
+                   ),
+                   Container(
+                     color: Colors.grey[200],
+                     child: Text(
+                       'Secondary Text',
+                       style: TextStyle(color: Colors.black87),
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+           ),
+         );
+         
+         await expectLater(tester, meetsGuideline(textContrastGuideline));
+       });
+       
+       testWidgets('Screen reader navigation', (tester) async {
+         await tester.pumpWidget(
+           MaterialApp(
+             home: Scaffold(
+               body: Column(
+                 children: [
+                   Text('Heading', semanticsLabel: 'Main heading'),
+                   Text('Content', semanticsLabel: 'Main content'),
+                   ElevatedButton(
+                     onPressed: () {},
+                     child: Text('Action'),
+                     semanticsLabel: 'Perform action button',
+                   ),
+                 ],
+               ),
+             ),
+           ),
+         );
+         
+         // Verify semantic order
+         final semantics = tester.binding.pipelineOwner.semanticsOwner!;
+         expect(semantics, isNotNull);
+         
+         // Check that elements have proper semantic information
+         expect(find.bySemanticsLabel('Main heading'), findsOneWidget);
+         expect(find.bySemanticsLabel('Main content'), findsOneWidget);
+         expect(find.bySemanticsLabel('Perform action button'), findsOneWidget);
+       });
+     });
+   }
+   ```
+
+**Success Criteria**:
+- ✅ 95%+ code coverage across all layers
+- ✅ All widget tests pass with proper semantics
+- ✅ Integration tests cover complete user flows
+- ✅ Performance benchmarks meet 60fps target
+- ✅ Accessibility compliance (WCAG 2.1 AA)
+- ✅ Cross-platform test compatibility
+- ✅ Automated test execution in CI/CD
+- ✅ Performance regression detection
+
+**Deliverables**:
+1. Complete unit test suite for services and repositories
+2. Widget tests for all UI components and forms
+3. Integration tests for critical user journeys
+4. Performance test suite with benchmarking
+5. Accessibility compliance test framework
+6. Automated test execution configuration
+7. Test coverage reporting and monitoring
+8. Performance regression detection system

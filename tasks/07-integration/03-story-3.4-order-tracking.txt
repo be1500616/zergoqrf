@@ -1,0 +1,187 @@
+**Task: Complete Order Tracking Feature Implementation**
+
+**Objective**: Implement a comprehensive real-time order tracking system for the ZERGO QR restaurant platform, covering the complete customer journey from order placement to delivery/pickup completion.
+
+**Phase 1: Requirements Analysis and Architecture Planning**
+
+1. **Story Analysis**: 
+   - Thoroughly analyze `docs/stories/story-3.4-order-tracking.md` to extract all functional requirements, user personas, acceptance criteria, and technical specifications
+   - Identify all user flows: customer order tracking, restaurant order management, kitchen workflow integration, and delivery coordination
+   - Document any gaps or ambiguities in requirements for clarification
+
+2. **Architecture Design**:
+   - Design the complete system architecture following vertical slice clean architecture patterns
+   - Plan feature organization with proper layer separation (presentation → application → domain → infrastructure)
+   - Design real-time communication strategy (WebSocket/Server-Sent Events) for live order status updates using with supabase realtime
+   - Plan database schema changes for order status tracking, timestamps, and audit trails and use supabse service to interact with the supabase database
+
+**Phase 2: Backend Implementation (FastAPI)**
+
+**Strict Adherence Required**: Follow all coding standards in `.augment/rules/fastapi-rules.md`
+
+1. **Domain Layer** (`apps/backend/app/features/order_tracking/domain/`):
+   - Create order status entities and value objects (OrderStatus, OrderTimeline, DeliveryInfo)
+   - Define repository interfaces for order tracking operations
+   - Implement domain services for order state transitions and business rules
+
+2. **Application Layer** (`apps/backend/app/features/order_tracking/application/`):
+   - Implement use cases: UpdateOrderStatus, GetOrderTracking, NotifyOrderUpdate
+   - Create DTOs for order tracking data transfer
+   - Design event handlers for real-time notifications
+
+3. **Infrastructure Layer** (`apps/backend/app/features/order_tracking/infrastructure/`):
+   - Implement repository patterns with Supabase integration
+   - Create real-time notification services (WebSocket/SSE)
+   - Set up order status change event publishers
+
+4. **Presentation Layer** (`apps/backend/app/features/order_tracking/presentation/`):
+   - Design REST API endpoints for order tracking operations
+   - Implement WebSocket endpoints for real-time updates
+   - Create Pydantic schemas for request/response validation
+
+**Phase 3: Frontend Implementation (Flutter)**
+
+**Strict Adherence Required**: Follow all coding standards in `.augment/rules/flutter-rules.md`
+Ensure frontend follows the design guidelines
+- The new order tracking feature must seamlessly integrate with this established foundation
+
+**Implementation Requirements**:
+
+**Phase 1: Design System Adherence**
+1. **Use Established Component Library**:
+   - Utilize existing `EnhancedButton`, `EnhancedLoading`, `EnhancedCard` components
+   - Follow the implemented `AppSpacing` system for consistent margins and padding
+   - Use `ScreenSize` utility for responsive breakpoints (mobile: <600px, tablet: 600-1200px, desktop: >1200px)
+   - Apply established `AppAnimations` configuration (fast: 150ms, normal: 250ms, slow: 400ms)
+
+2. **Follow Established Architecture Patterns**:
+   - Implement vertical slice architecture: `features/order_tracking/{application,domain,infrastructure,presentation}`
+   - Use GetX for state management following existing controller patterns
+   - Create DTOs, entities, repositories, and use cases following the clean architecture structure
+   - Maintain consistent file naming: `order_tracking_controller.dart`, `order_tracking_screen.dart`, etc.
+
+**Phase 2: UI/UX Implementation Standards**
+1. **Screen Design Consistency**:
+   - Follow the modernized AppBar pattern with enhanced styling and animations
+   - Implement staggered entrance animations using `flutter_animate` package
+   - Use shimmer skeleton loading states during data fetching
+   - Apply consistent error handling with user-friendly messaging
+   - Ensure responsive design adapts properly across all breakpoints
+
+2. **Component Implementation**:
+   - Use `withValues(alpha: X)` instead of deprecated `withOpacity(X)` for transparency
+   - Implement proper theme integration using `Theme.of(context).colorScheme`
+   - Add smooth micro-interactions and hover states
+   - Include proper loading overlays and progress indicators
+
+**Phase 3: Technical Standards Compliance**
+1. **Code Quality Requirements**:
+   - All functions and classes must have comprehensive Google-style docstrings
+   - Use explicit type hints throughout the codebase
+   - Implement proper error handling with try-catch blocks and custom exceptions
+   - Follow the established import structure and dependency injection patterns
+
+2. **Performance and Animation Standards**:
+   - Ensure 60fps performance for all animations
+   - Use `const` constructors where possible for widget optimization
+   - Implement proper disposal of controllers and streams
+   - Add entrance animations with appropriate delays (200ms, 300ms, 400ms staggered)
+
+
+1. **Domain Layer** (`apps/frontend/lib/features/order_tracking/domain/`):
+   - Create order tracking entities and repository interfaces
+   - Define order status enums and business logic
+
+2. **Infrastructure Layer** (`apps/frontend/lib/features/order_tracking/infrastructure/`):
+   - Implement API client for order tracking endpoints
+   - Create WebSocket/SSE clients for real-time updates
+   - Implement local caching for offline order status
+
+3. **Application Layer** (`apps/frontend/lib/features/order_tracking/application/`):
+   - Create GetX controllers for order tracking state management
+   - Implement use cases for fetching and updating order status
+   - Handle real-time update streams and state synchronization
+
+4. **Presentation Layer** (`apps/frontend/lib/features/order_tracking/presentation/`):
+   - Design order tracking screen with modern UI/UX patterns
+   - Implement real-time status updates with smooth animations
+   - Create responsive design for mobile, tablet, and desktop
+   - Add proper loading states, error handling, and offline indicators
+
+**Phase 4: UI/UX Implementation Standards**
+
+1. **Design System Compliance**:
+   - Use established enhanced components (EnhancedButton, EnhancedCard, EnhancedLoading)
+   - Implement smooth animations using flutter_animate and AppAnimations
+   - Follow Material Design 3 principles with consistent theming
+   - Use proper spacing with AppSpacing and responsive design with ScreenSize
+
+2. **User Experience Requirements**:
+   - Real-time order status updates without page refresh
+   - Visual progress indicators showing order journey stages
+   - Push notifications for critical status changes
+   - Estimated delivery/pickup times with live updates
+   - Order timeline with timestamps and status descriptions
+
+**Phase 5: Testing and Quality Assurance**
+
+1. **Backend Testing**:
+   - Unit tests for all domain logic and use cases
+   - Integration tests for API endpoints and database operations
+   - Real-time communication testing for WebSocket/SSE functionality
+   - Load testing for concurrent order tracking requests
+
+2. **Frontend Testing**:
+   - Widget tests for all order tracking components
+   - Integration tests for complete user flows
+   - Real-time update testing across different network conditions
+   - Cross-platform testing (mobile, tablet, desktop, web)
+
+3. **End-to-End Validation**:
+   - Complete order lifecycle testing from placement to completion
+   - Multi-user scenario testing (customer, restaurant, delivery)
+   - Performance validation (60fps animations, <100ms response times)
+   - Security testing for order data access and real-time connections
+
+**Phase 6: Documentation and Story Completion**
+
+1. **Technical Documentation**:
+   - API documentation with OpenAPI/Swagger specifications
+   - Real-time communication protocol documentation
+   - Database schema changes and migration scripts
+   - Deployment and configuration instructions
+
+2. **Story Documentation Update**:
+   Update `docs/stories/story-3.4-order-tracking.md` with:
+   - **Implementation Details**: Technical architecture decisions and patterns used
+   - **API Specifications**: Complete endpoint documentation with examples
+   - **Real-time Features**: WebSocket/SSE implementation details and message formats
+   - **UI/UX Decisions**: Design choices, animation patterns, and responsive behavior
+   - **Database Changes**: Schema modifications and data migration requirements
+   - **Testing Results**: Coverage reports, performance metrics, and validation outcomes
+   - **Deviations**: Any changes from original requirements with justifications
+   - **Future Enhancements**: Identified opportunities for feature expansion
+
+**Success Criteria**:
+- ✅ Real-time order status updates working across all platforms
+- ✅ Complete order tracking UI with professional design and smooth animations
+- ✅ Comprehensive API coverage for all order tracking operations
+- ✅ 100% test coverage for critical order tracking functionality
+- ✅ Performance targets met (60fps UI, <100ms API responses, <3s load times)
+- ✅ Security validation passed for order data access and real-time connections
+- ✅ Cross-platform compatibility verified (mobile, tablet, desktop, web)
+- ✅ Documentation complete and story file updated with implementation details
+
+**Deliverables**:
+1. Complete backend API with real-time capabilities
+2. Full-featured Flutter order tracking interface
+3. Comprehensive test suite with high coverage
+4. Updated story documentation with implementation details
+5. Deployment-ready code following all established architecture patterns
+
+**Quality Gates**:
+- All code must pass Flutter analyze and FastAPI linting
+- No deprecated API usage or security vulnerabilities
+- Real-time updates must work reliably across network conditions
+- UI must maintain 60fps performance on all supported platforms
+- All acceptance criteria from the original story must be validated and documented

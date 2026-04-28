@@ -1,0 +1,58 @@
+**Task: Implement Story 3.2 - Cart Management End-to-End**
+
+Please implement Story 3.2 from `docs/stories/story-3.2-cart-management.md` completely end-to-end for the ZERGO QR restaurant management system.
+
+**Implementation Requirements:**
+1. **Read and Analyze**: First, read the story file to understand the complete requirements, acceptance criteria, and technical specifications for cart management functionality
+2. **Production-Grade Full Stack Implementation**: Implement all required components following Clean Architecture principles:
+   - Backend API endpoints (FastAPI with comprehensive error handling and validation)
+   - Database schema design and migrations using Supabase (proper tables, relationships, RLS policies) use supabase service
+   - Frontend components with proper state management, getx way
+   - Cart persistence and synchronization logic, getx way and fastapi way
+   - Real-time cart updates if specified in requirements, use supabase service
+3. **Supabase Integration**: 
+   - Design proper database tables for cart management with appropriate relationships
+   - Implement Row Level Security (RLS) policies for multi-tenant cart isolation
+   - Use Supabase real-time features if cart synchronization is required
+   - Create proper database functions and triggers as needed
+   - Ensure data consistency and referential integrity
+4. **Comprehensive Testing**: Create thorough test coverage:
+   - Curl based request response testing for all endpoints
+   - Unit tests for all business logic and use cases
+   - Integration tests for API endpoints with database operations
+   - End-to-end testing of complete cart management workflows
+   - Test cart persistence, item addition/removal, quantity updates
+5. **Database Reproducibility**: 
+   - Create proper database migration scripts
+   - Implement data seeding for development and testing environments
+   - Document database schema changes and relationships
+   - Ensure database can be recreated consistently across environments
+
+**Development Approach:**
+- **YOLO Mode**: Implement in yolo and maintain production quality standards
+- **No Hacks**: Use proper architectural patterns, no shortcuts or temporary solutions
+- **Production-Grade**: Implement with scalability, security, and maintainability in mind
+- Follow existing codebase patterns (Clean Architecture, FastAPI best practices from `.augment/rules/`)
+- Ensure proper error handling, logging, and validation at all layers
+- Maintain consistency with the recently fixed restaurant management system
+- Use proper dependency injection and repository patterns
+- Implement structured exception handling with meaningful error messages
+- update the story file with the implementation details and technical decisions
+
+**Technical Standards:**
+- Follow FastAPI coding standards from `.augment/rules/fastapi-rules.md`
+- Implement proper authentication and authorization for cart operations
+- Use user-authenticated Supabase clients for RLS operations (learned from recent fixes)
+- Ensure multi-tenant security with proper data isolation
+- Implement proper transaction handling for cart operations
+- Add comprehensive logging with structured context information
+
+**Deliverables:**
+- Fully functional cart management system with all CRUD operations
+- Proper database schema with migrations and seeding scripts
+- Comprehensive test suite with high coverage
+- Updated story documentation with implementation details and technical decisions
+- Production-ready code that integrates seamlessly with existing restaurant management system
+- Database reproducibility documentation and scripts
+
+**Context**: This builds upon the recently resolved restaurant management system issues (database updates, staff creation, error logging), so ensure compatibility and leverage the established patterns for user authentication, RLS policies, and multi-tenant architecture.

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from ....common.supabase_client import get_supabase
 
-router = APIRouter()
+router = APIRouter(tags=["Orders"])
 
 
 class OrderItem(BaseModel):

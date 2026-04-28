@@ -1,0 +1,1 @@
+"""Menu use cases."""

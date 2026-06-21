@@ -3,6 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine.url import make_url
 
 PROFILE_ALIASES = {
     "development": "dev",
@@ -47,6 +48,8 @@ class Settings(BaseSettings):
     supabase_service_role_key: str | None = None
     supabase_jwt_secret: str = ""
 
+    database_url: str = ""
+
     model_config = SettingsConfigDict(extra="ignore")
 
     def model_post_init(self, __context: object) -> None:
@@ -59,19 +62,42 @@ class Settings(BaseSettings):
             "local": "development",
         }.get(profile, self.env)
 
-        self.supabase_url = self.supabase_url or os.getenv(
-            _profile_env_key(profile, "URL"), ""
-        )
-        self.supabase_anon_key = self.supabase_anon_key or os.getenv(
-            _profile_env_key(profile, "ANON_KEY"), ""
-        )
-        if not self.supabase_service_role_key:
+        # local profile is fully self-contained: ignore any base-env Supabase
+        # values so the local Docker stack can't accidentally inherit a stale
+        # cloud URL from a shared .env. Other profiles (dev/test/prod) keep
+        # the original "fall back to profile-specific vars" behavior.
+        if profile == "local":
+            self.supabase_url = os.getenv("SUPABASE_LOCAL_URL", "")
+            self.supabase_anon_key = os.getenv("SUPABASE_LOCAL_ANON_KEY", "")
             self.supabase_service_role_key = os.getenv(
-                _profile_env_key(profile, "SERVICE_ROLE_KEY")
+                "SUPABASE_LOCAL_SERVICE_ROLE_KEY"
             )
-        self.supabase_jwt_secret = self.supabase_jwt_secret or os.getenv(
-            _profile_env_key(profile, "JWT_SECRET"), ""
-        )
+            self.supabase_jwt_secret = os.getenv(
+                "SUPABASE_LOCAL_JWT_SECRET", ""
+            )
+        else:
+            self.supabase_url = self.supabase_url or os.getenv(
+                _profile_env_key(profile, "URL"), ""
+            )
+            self.supabase_anon_key = self.supabase_anon_key or os.getenv(
+                _profile_env_key(profile, "ANON_KEY"), ""
+            )
+            if not self.supabase_service_role_key:
+                self.supabase_service_role_key = os.getenv(
+                    _profile_env_key(profile, "SERVICE_ROLE_KEY")
+                )
+            self.supabase_jwt_secret = self.supabase_jwt_secret or os.getenv(
+                _profile_env_key(profile, "JWT_SECRET"), ""
+            )
+
+        # Database URL: local uses DATABASE_URL; shared profiles use SUPABASE_{PROFILE}_DB_URL.
+        if not self.database_url:
+            if profile == "local":
+                self.database_url = os.getenv("DATABASE_URL", "")
+            else:
+                self.database_url = os.getenv(
+                    _profile_env_key(profile, "DB_URL"), ""
+                )
 
         # Supabase credentials are required for shared profiles.
         if profile in {"dev", "test", "prod"}:
@@ -87,6 +113,35 @@ class Settings(BaseSettings):
                 raise ValueError(
                     f"Missing required Supabase config for profile '{profile}': {joined}"
                 )
+
+        # Database URL is required for every profile. Validate scheme once.
+        if not self.database_url:
+            expected = (
+                "DATABASE_URL" if profile == "local"
+                else _profile_env_key(profile, "DB_URL")
+            )
+            raise ValueError(
+                f"Missing required database config for profile '{profile}': {expected}"
+            )
+        try:
+            parsed = make_url(self.database_url)
+        except Exception as exc:
+            raise ValueError(
+                f"Invalid DATABASE_URL for profile '{profile}': {exc}"
+            ) from exc
+        if parsed.drivername not in ("postgresql+asyncpg", "postgresql"):
+            raise ValueError(
+                f"Invalid DATABASE_URL scheme for profile '{profile}': "
+                f"expected postgresql+asyncpg or postgresql, got {parsed.drivername}"
+            )
+        # SQLAlchemy async engine needs the explicit asyncpg driver prefix.
+        # Accept bare `postgresql://` from env files and rewrite once, here.
+        # NB: `str(URL)` masks the password as ***, so we must use
+        # `render_as_string(hide_password=False)` (default) and reattach.
+        if parsed.drivername == "postgresql":
+            self.database_url = parsed.render_as_string(hide_password=False).replace(
+                "postgresql://", "postgresql+asyncpg://", 1
+            )
 
     @property
     def allowed_origins(self) -> List[str]:

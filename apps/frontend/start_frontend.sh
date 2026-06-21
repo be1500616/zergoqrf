@@ -97,13 +97,13 @@ fi
 # Check backend connectivity
 echo ""
 echo "🔗 Checking backend connectivity..."
-BACKEND_URL="http://localhost:8001"
+BACKEND_URL="http://localhost:8000"
 if curl -s "$BACKEND_URL/healthz" > /dev/null; then
     print_status "Backend is accessible at $BACKEND_URL"
 else
     print_warning "Backend not accessible at $BACKEND_URL"
     print_info "Make sure to start the backend server first:"
-    print_info "cd apps/backend && python3 start_backend.py"
+    print_info "  cd /path/to/repo && make backend-local"
 fi
 
 # Parse command line arguments

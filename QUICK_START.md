@@ -90,7 +90,7 @@ Before merging each branch:
 cd apps/backend
 pytest tests/ -v
 ruff check .
-python start_backend.py  # Verify it starts
+make backend-local        # Verify it starts (requires `supabase start` first)
 ```
 
 ### Frontend

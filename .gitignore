@@ -1,22 +1,81 @@
-# General
+# =============================================================================
+# OS
+# =============================================================================
 .DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =============================================================================
+# Editors & IDEs
+# =============================================================================
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+.history/
+.cursor/
+.augment/
+.bmad-core/
+.roomodes
+.aider*
+*.swp
+*.swo
+*~
+
+# =============================================================================
+# AI / agent local artifacts
+# =============================================================================
+.claude/
+.codex/
+.windsurf/
+
+# =============================================================================
+# Secrets & local env (track .env.example, .env.sample)
+# =============================================================================
 .env
 .env.*
 !.env.example
+!.env.sample
 !**/.env.example
-*.log
-*.swp
-*.swo
-*.bak
-*.tmp
+!**/.env.sample
+.envrc
+**/.envrc
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+apps/backend/.env
+apps/backend/.env.*
+apps/backend/.env.*.local
+apps/frontend/.env
+apps/frontend/.env.*
+apps/frontend/.env.*.local
+infra/supabase/.env
+infra/supabase/.env.*
+infra/supabase/.branches/
+infra/supabase/.temp/
 
+# =============================================================================
 # Python
+# =============================================================================
 __pycache__/
+**/__pycache__/
 *.py[cod]
+*.pyo
+*$py.class
+*.so
+.Python
 .venv/
 venv/
-.envrc
-*.egg-info/
+ENV/
+env/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -26,241 +85,141 @@ venv/
 .tox/
 .coverage
 .coverage.*
+htmlcov/
+coverage/
+coverage.xml
+*.cover
+*.egg-info/
 dist/
 build/
 *.sqlite3
 *.db
 *.ipynb_checkpoints/
-**/__pycache__/
-**/*.py[cod]
-*.pyc
 
+# =============================================================================
 # Flutter / Dart
+# =============================================================================
 .dart_tool/
 .packages
 .pub-cache/
-build/
+.pub/
 .flutter-plugins
 .flutter-plugins-dependencies
-.melos_tool/
 .fvm/
-# Package configuration (generated)
-**/.dart_tool/package_config.json
-**/.dart_tool/package_config_subset
-**/.dart_tool/dartpad/
-**/.dart_tool/flutter_build/
-
-# VS Code
-.vscode/
-.history/
-
-# Node / CI
-node_modules/
-
-# Coverage
-coverage/
-nyc_output/
-htmlcov/
-
-# Docker
-*.pid
-
-# =============================
-# Additional: OS & Editors
-# =============================
-Thumbs.db
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# =============================
-# Flutter multi-platform specifics
-# =============================
-# Catch nested build directories (in packages/apps)
+.melos_tool/
+.metadata
+**/doc/api/
+**/ios/Flutter/.last_build_id
 **/build/
-# Generated registrants
-**/generated_plugin_registrant.dart
 **/GeneratedPluginRegistrant.*
+**/generated_plugin_registrant.*
 **/gen_dart_plugin_registrant.stamp
 **/gen_localizations.stamp
-# Flutter asset output (when surfaced)
 **/flutter_assets/
-# Flutter cache and build artifacts
 **/cache.dill.track.dill
 **/native_assets/
 **/unit_test_assets/
 **/test_cache/
+# Symbolication / obfuscation
+app.*.symbols
+app.*.map.json
 
-# =============================
-# Android (Gradle)
-# =============================
+# =============================================================================
+# Android
+# =============================================================================
 .gradle/
-android/.gradle/
-android/captures/
-android/local.properties
-android/app/*.keystore
-android/app/*.jks
-android/app/google-services.json
-android/app/src/**/GeneratedPluginRegistrant*.java
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/app/*.keystore
+**/android/app/*.jks
+**/android/app/google-services.json
+**/android/app/src/**/GeneratedPluginRegistrant*.java
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
 
-# =============================
-# iOS / CocoaPods / Xcode
-# =============================
-ios/Flutter/ephemeral/
-ios/Flutter/Generated.xcconfig
-ios/Runner/GeneratedPluginRegistrant.*
-ios/Pods/
-ios/.symlinks/
-ios/DerivedData/
-ios/Runner.xcworkspace/
+# =============================================================================
+# iOS / Xcode
+# =============================================================================
 *.xcuserstate
 *.xcuserdatad/
-# Firebase (if used)
-ios/Runner/GoogleService-Info.plist
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/GeneratedPluginRegistrant.*
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/DerivedData/
+**/ios/Runner.xcworkspace/
+**/ios/Runner/GoogleService-Info.plist
 
-# =============================
+# =============================================================================
 # macOS (Flutter Desktop)
-# =============================
-macos/Flutter/ephemeral/
-macos/Flutter/GeneratedPluginRegistrant.swift
-macos/Pods/
-macos/.symlinks/
-macos/DerivedData/
-macos/Runner.xcworkspace/
+# =============================================================================
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Pods/
+**/macos/.symlinks/
+**/macos/DerivedData/
+**/macos/Runner.xcworkspace/
 
-# =============================
+# =============================================================================
 # Windows / Linux (Flutter Desktop)
-# =============================
-windows/flutter/ephemeral/
-windows/flutter/generated_plugin_registrant.cc
-windows/flutter/generated_plugins.cmake
-linux/flutter/ephemeral/
-linux/flutter/generated_plugin_registrant.cc
-linux/flutter/generated_plugins.cmake
+# =============================================================================
+**/windows/flutter/ephemeral/
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugins.cmake
+**/linux/flutter/ephemeral/
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugins.cmake
 
-# =============================
-# Supabase infra
-# =============================
-infra/supabase/.temp/
-infra/supabase/.branches/
-infra/supabase/.env
-infra/supabase/.env.*
-
-# =============================
-# Logs / Temp dirs
-# =============================
+# =============================================================================
+# Node / Web
+# =============================================================================
+node_modules/
+web-bundles/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# =============================================================================
+# Logs, temp, scratch
+# =============================================================================
+*.log
+*.bak
+*.tmp
+*.pid
+*.orig
+*.rej
 .tmp/
 tmp/
 temp/
 
-# Flutter project metadata (not needed in VCS)
-.metadata
-
-# =============================
-# Misc
-# =============================
+# =============================================================================
+# VCS
+# =============================================================================
 .svn/
 CVS/
-*.orig
-*.rej
-.augment/
-.bmad-core/
-.claude/
-.cursor/
-.roomodes
 
-web-bundles/
+# =============================================================================
+# Supabase CLI local state
+# =============================================================================
+infra/supabase/supabase/
 
-# =============================
-# Additional Python Patterns
-# =============================
-*.pyc
-*.pyo
-*.pyd
-*.so
-.Python
-**/*.py[cod]
-
-# =============================
-# Additional Flutter Patterns
-# =============================
-# Ensure all build artifacts are ignored
-**/build/
-**/.dart_tool/
-**/.flutter-plugins
-**/.flutter-plugins-dependencies
-**/cache.dill.track.dill
-
-# =============================
-# Generated Files (NEVER commit)
-# =============================
-**/GeneratedPluginRegistrant.*
-**/generated_plugin_registrant.*
-**/.dart_tool/package_config.json
-**/.dart_tool/package_config_subset
-
-# =============================
-# Test Artifacts
-# =============================
-**/.pytest_cache/
-**/htmlcov/
-**/.coverage
-.coverage.*
-coverage.xml
-*.cover
-.hypothesis/
-**/.tox/
-
-# =============================
-# IDE Specific (Extended)
-# =============================
-.vscode/settings.json
-.vscode/launch.json
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/usage.statistics.xml
-.idea/shelf/
-
-# =============================
-# OS Specific
-# =============================
-.DS_Store
-.AppleDouble
-.LSOverride
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# =============================
-# Local Agent / Workflow Artifacts
-# =============================
+# =============================================================================
+# Project-local agent / one-off artifacts
+# =============================================================================
 .gitbutler-review-complete
+GITBUTLER_*
 .github/workflows/workflow-processing-results.json
 .github/workflows/drawbridge-workflow-report.md
 .github/workflows/drawbridge-workflow.mdc
-.github/workflows/CLAUDE.md
-GITBUTLER_*
 apps/backend/CLAUDE.md
 apps/frontend/CLAUDE.md
 apps/backend/TEST_RESULTS.md
 apps/backend/fix_tests.py
 apps/backend/organize_tests.py
-infra/supabase/supabase/
-
-# =============================
-# Local Analysis / Test Outputs
-# =============================
 apps/frontend/analysis_output*.txt
 apps/backend/*_test_results.json
 apps/backend/*_test_report_*.json
-
-# =============================
-# Generated Flutter Desktop Files (nested apps/)
-# =============================
-**/linux/flutter/generated_plugins.cmake
-**/windows/flutter/generated_plugins.cmake

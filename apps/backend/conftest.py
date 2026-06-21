@@ -4,13 +4,33 @@ This module provides pytest fixtures for database testing, authentication,
 and common test utilities following clean architecture principles.
 """
 
+# Test env must be set BEFORE the first ``app.*`` import, because
+# ``app.core.config.settings = Settings()`` runs at module import time and
+# validates that the active profile has a database URL.
+import os
+
+os.environ.setdefault("APP_PROFILE", "local")
+os.environ.setdefault(
+    "DATABASE_URL",
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres",
+)
+# ``local`` profile is treated as "development" in Settings; bypass the
+# Supabase-required branch by providing an empty URL/key (the validation
+# gate is ``profile in {"dev", "test", "prod"}``).
+os.environ.setdefault("SUPABASE_URL", "http://localhost:54321")
+os.environ.setdefault("SUPABASE_ANON_KEY", "test-anon-key")
+os.environ.setdefault("SUPABASE_JWT_SECRET", "test-jwt-secret")
+
 import uuid
+from contextlib import asynccontextmanager
 from typing import AsyncGenerator
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
+import pytest_asyncio
 from app.main import create_app
 from httpx import ASGITransport, AsyncClient
+
 
 @pytest.fixture
 def mock_supabase():
@@ -48,40 +68,35 @@ def mock_supabase():
             phone=None,
         )
     )
-    
+
     # Mock table query
     mock_client.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
     mock_client.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value.data = []
 
     return mock_client
 
-@pytest.fixture(autouse=True)
-def patch_supabase(mock_supabase):
-    """Global patch for ALL Supabase client creation functions."""
-    with patch("app.common.supabase_client.get_supabase", return_value=mock_supabase), \
-         patch("app.common.supabase_client.get_supabase_anon", return_value=mock_supabase), \
-         patch("app.common.supabase_client.create_client", return_value=mock_supabase), \
-         patch("app.common.supabase_client.acreate_client", return_value=mock_supabase), \
-         patch("supabase.create_client", return_value=mock_supabase), \
-         patch("supabase.acreate_client", return_value=mock_supabase):
-        
-        # Clear lru_cache for Supabase client functions
-        from app.common import supabase_client
-        if hasattr(supabase_client.get_supabase, "cache_clear"):
-            supabase_client.get_supabase.cache_clear()
-        if hasattr(supabase_client.get_supabase_anon, "cache_clear"):
-            supabase_client.get_supabase_anon.cache_clear()
-            
-        yield mock_supabase
 
-@pytest.fixture
-async def test_client() -> AsyncGenerator[AsyncClient, None]:
-    """Create test client with dependency overrides.
-
-    Returns a test client for making HTTP requests to the FastAPI app.
-    """
-    app = create_app()
-
-    transport = ASGITransport(app=app)
+@pytest_asyncio.fixture
+async def test_client(test_app) -> AsyncGenerator[AsyncClient, None]:
+    """Create test client for the FastAPI app under test."""
+    transport = ASGITransport(app=test_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
+
+
+@pytest_asyncio.fixture
+async def test_app(mock_supabase):
+    """Create a FastAPI app with Supabase clients stubbed via app.state.
+
+    Replaces the production ``lifespan`` (which would try to talk to a real
+    Supabase) with one that just sets ``app.state`` to a mock.
+    """
+    @asynccontextmanager
+    async def _stub_lifespan(app):
+        app.state.supabase_service = mock_supabase
+        app.state.supabase_anon = mock_supabase
+        yield
+
+    app = create_app()
+    app.router.lifespan_context = _stub_lifespan
+    return app

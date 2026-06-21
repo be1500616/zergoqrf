@@ -10,7 +10,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 import jwt
-from app.common.supabase_client import get_supabase, get_user_supabase_client
+from app.common.supabase_client import get_supabase, user_supabase
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from supabase import Client
@@ -268,7 +268,7 @@ async def get_user_supabase(
             detail="Missing authentication token",
         )
 
-    return get_user_supabase_client(credentials.credentials)
+    return user_supabase(credentials.credentials)
 
 
 async def validate_anonymous_session(

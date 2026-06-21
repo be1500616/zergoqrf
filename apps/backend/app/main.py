@@ -1,8 +1,12 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .common.exceptions import AppError, app_error_handler
+from .common.supabase_client import make_supabase_anon, make_supabase_service
 from .core.config import settings
+from .core.database import close_database, engine
 from .core.logging import setup_logging
 from .features.admin.presentation.router import router as admin_router
 from .features.auth.presentation.auth_router import router as auth_router
@@ -16,11 +20,24 @@ from .security import verify_supabase_jwt
 setup_logging(settings.log_level)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Long-lived Supabase clients + warmed engine — a bad DNS or auth fails
+    # at startup, not first request.
+    app.state.supabase_service = await make_supabase_service()
+    app.state.supabase_anon = await make_supabase_anon()
+    async with engine.connect() as _conn:
+        pass
+    yield
+    await close_database()
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="ZERGO QR API",
         description="The backend API for ZERGO QR Ordering System",
         version="0.1.0",
+        lifespan=lifespan,
         openapi_tags=[
             {
                 "name": "Public Menu",

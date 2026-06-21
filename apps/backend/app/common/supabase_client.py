@@ -1,81 +1,43 @@
-from functools import lru_cache
-from typing import Optional
+"""Supabase client factories and FastAPI dependencies.
 
-from supabase import Client, create_client, AClient, acreate_client
+Two factories (`make_supabase_service`, `make_supabase_anon`) create the
+long-lived async clients, stored on ``app.state`` at startup. Two
+FastAPI dependencies (`get_supabase`, `get_supabase_anon`) read those
+clients off ``request.app.state`` so endpoints keep the familiar
+``Depends(...)`` shape. ``user_supabase`` is a sync one-shot helper
+for a user-scoped client (tokens rotate, not cached).
+"""
+
+from fastapi import Request
+from supabase import AClient, acreate_client, create_client
+from supabase import Client as SyncClient
 
 from ..core.config import settings
 
 
-@lru_cache(maxsize=1)
-def get_supabase() -> Client:
-    """Get Supabase client with service role key for backend operations."""
-    key = settings.supabase_service_role_key or settings.supabase_anon_key or ""
-    return create_client(settings.supabase_url, key)
-
-
-@lru_cache(maxsize=1)
-def get_supabase_anon() -> Client:
-    """Get Supabase client with anonymous key for public operations."""
-    return create_client(settings.supabase_url, settings.supabase_anon_key)
-
-
-def create_user_client(access_token: str) -> Client:
-    """Create Supabase client with user's access token for RLS-enabled operations."""
-    client = create_client(settings.supabase_url, settings.supabase_anon_key)
-    client.auth.set_session(access_token, "")
-    return client
-
-
-def get_user_supabase_client(access_token: str) -> Client:
-    """Get Supabase client configured with user's JWT token for RLS operations.
-
-    This client should be used for operations that need to respect Row Level Security
-    policies, as it includes the user's authentication context.
-
-    Args:
-        access_token: The user's JWT access token
-
-    Returns:
-        Supabase client configured with user authentication
-    """
-    return create_user_client(access_token)
-
-
-# Async client functions for scalable concurrent operations
-@lru_cache(maxsize=1)
-async def get_async_supabase() -> AClient:
-    """Get async Supabase client with service role key for backend operations.
-
-    This client supports concurrent operations and should be used for
-    high-throughput scenarios with multiple concurrent users.
-    """
+async def make_supabase_service() -> AClient:
+    """Async factory for the service-role client. Called once in lifespan."""
     key = settings.supabase_service_role_key or settings.supabase_anon_key or ""
     return await acreate_client(settings.supabase_url, key)
 
 
-@lru_cache(maxsize=1)
-async def get_async_supabase_anon() -> AClient:
-    """Get async Supabase client with anonymous key for public operations."""
+async def make_supabase_anon() -> AClient:
+    """Async factory for the anon client. Called once in lifespan."""
     return await acreate_client(settings.supabase_url, settings.supabase_anon_key)
 
 
-async def create_async_user_client(access_token: str) -> AClient:
-    """Create async Supabase client with user's access token for RLS-enabled operations."""
-    client = await acreate_client(settings.supabase_url, settings.supabase_anon_key)
-    await client.auth.set_session(access_token, "")
+def get_supabase(request: Request) -> AClient:
+    """FastAPI dependency returning the shared service-role client."""
+    return request.app.state.supabase_service
+
+
+def get_supabase_anon(request: Request) -> AClient:
+    """FastAPI dependency returning the shared anon client."""
+    return request.app.state.supabase_anon
+
+
+def user_supabase(access_token: str) -> SyncClient:
+    """Sync one-shot for a user-scoped client (tokens rotate, not cached)."""
+    client = create_client(settings.supabase_url, settings.supabase_anon_key)
+    client.auth.set_session(access_token, "")
     return client
-
-
-async def get_async_user_supabase_client(access_token: str) -> AClient:
-    """Get async Supabase client configured with user's JWT token for RLS operations.
-
-    This client should be used for operations that need to respect Row Level Security
-    policies, as it includes the user's authentication context.
-
-    Args:
-        access_token: The user's JWT access token
-
-    Returns:
-        Async Supabase client configured with user authentication
-    """
-    return await create_async_user_client(access_token)

@@ -1,17 +1,10 @@
 import asyncio
 import json
-import os
 
-from dotenv import load_dotenv
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-load_dotenv()
-
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres"
-)
+from app.core.config import settings
 
 
 async def seed_data():
@@ -19,7 +12,7 @@ async def seed_data():
     Populates the database with initial seed data for restaurants, tables,
     and menus.
     """
-    engine = create_async_engine(DATABASE_URL, echo=True)
+    engine = create_async_engine(settings.database_url, echo=True)
     async with engine.begin() as conn:
         print("Seeding data...")
 

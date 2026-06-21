@@ -1,52 +1,19 @@
-# ZERGO Backend (FastAPI)
+# Backend
 
-FastAPI 0.110+ app structured using vertical slice clean architecture with Supabase integration.
+FastAPI service for the ZERGO QR ordering platform.
 
-## Run locally
+## Local development
 
-Prereqs: Python 3.12+, `uv` (optional), `.env` at repo root with Supabase creds.
-
-```
-# From repo root one-time
-cp .env.example .env  # fill values
-
-# Choose runtime profile (dev | test | prod | local)
-export APP_PROFILE=dev
-
-# Install deps
-cd apps/backend
-pip install -U pip
-pip install -e .
-
-# Run dev server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```bash
+make dev
 ```
 
-## Tests
+`make dev` brings up a usable local Postgres and applies every migration in
+`infra/supabase/migrations/` in lexical order. It prefers the Supabase CLI
+(``supabase start`` + ``supabase migration up``) and falls back to
+``docker compose up -d db`` plus a ``psql`` loop if the CLI is not on PATH.
 
-```
-pytest -q
-```
-
-## Project layout
-
-- `app/core` — settings, logging
-- `app/common` — exceptions, supabase client
-- `app/features/<feature>` — each has `domain/`, `application/`, `infrastructure/`, `presentation/`
-- `tests/` — pytest unit tests
-
-## Env vars
-
-- `SUPABASE_URL` (required)
-- `SUPABASE_ANON_KEY` (dev)
-- `SUPABASE_SERVICE_ROLE_KEY` (server)
-- `SUPABASE_JWT_SECRET` (verify tokens)
-- `ALLOWED_ORIGINS` comma-separated list
-
-Profile support:
-
-- `APP_PROFILE` controls active profile (`dev`, `test`, `prod`, `local`)
-- You can use shared keys (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, etc.) or profile-specific overrides:
-  - `SUPABASE_DEV_URL`, `SUPABASE_DEV_ANON_KEY`, `SUPABASE_DEV_SERVICE_ROLE_KEY`, `SUPABASE_DEV_JWT_SECRET`
-  - `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY`, `SUPABASE_TEST_SERVICE_ROLE_KEY`, `SUPABASE_TEST_JWT_SECRET`
-  - `SUPABASE_PROD_URL`, `SUPABASE_PROD_ANON_KEY`, `SUPABASE_PROD_SERVICE_ROLE_KEY`, `SUPABASE_PROD_JWT_SECRET`
+The backend reads its `DATABASE_URL` from `DATABASE_URL` (profile `local`) or
+`SUPABASE_{PROFILE}_DB_URL` (profile `dev`/`test`/`prod`). Startup fails fast
+with a readable error if the URL is missing or unparseable — no ghost
+hostnames.

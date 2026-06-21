@@ -11,20 +11,6 @@ from sqlalchemy.orm import DeclarativeBase
 
 from .config import settings
 
-# Database URL - using environment configuration
-# For local development, use the DATABASE_URL from environment
-# For production, this would be the Supabase connection string
-DATABASE_URL = getattr(settings, "database_url", None)
-
-# Ensure we use asyncpg driver for async operations
-if DATABASE_URL:
-    # Replace postgresql:// with postgresql+asyncpg:// if needed
-    if DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
-else:
-    # Fallback to constructing from individual components
-    DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/postgres"
-
 
 class Base(DeclarativeBase):
     """Base class for SQLAlchemy models."""
@@ -32,14 +18,15 @@ class Base(DeclarativeBase):
     pass
 
 
-# Create async engine
+# ponytail: pool tuning deferred to load measurement. Add pool_size,
+# max_overflow, pool_timeout only when a profiler says so.
 engine = create_async_engine(
-    DATABASE_URL,
+    settings.database_url,
     echo=settings.log_level.lower() == "debug",
     future=True,
 )
 
-# Create session factory
+# Session factory bound to the engine above.
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,

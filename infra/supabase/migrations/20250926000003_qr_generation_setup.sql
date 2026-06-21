@@ -15,21 +15,25 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- Create RLS policies for QR codes bucket
+DROP POLICY IF EXISTS "QR codes are publicly accessible" ON storage.objects;
 CREATE POLICY "QR codes are publicly accessible" ON storage.objects
     FOR SELECT USING (bucket_id = 'qr-codes');
 
+DROP POLICY IF EXISTS "Restaurant staff can upload QR codes" ON storage.objects;
 CREATE POLICY "Restaurant staff can upload QR codes" ON storage.objects
     FOR INSERT WITH CHECK (
         bucket_id = 'qr-codes' AND
         auth.jwt() ->> 'role' IN ('owner', 'manager', 'staff')
     );
 
+DROP POLICY IF EXISTS "Restaurant staff can update their QR codes" ON storage.objects;
 CREATE POLICY "Restaurant staff can update their QR codes" ON storage.objects
     FOR UPDATE USING (
         bucket_id = 'qr-codes' AND
         auth.jwt() ->> 'role' IN ('owner', 'manager', 'staff')
     );
 
+DROP POLICY IF EXISTS "Restaurant staff can delete their QR codes" ON storage.objects;
 CREATE POLICY "Restaurant staff can delete their QR codes" ON storage.objects
     FOR DELETE USING (
         bucket_id = 'qr-codes' AND

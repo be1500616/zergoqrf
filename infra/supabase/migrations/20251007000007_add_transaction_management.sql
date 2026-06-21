@@ -124,12 +124,7 @@ CREATE TABLE refunds (
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    processed_at TIMESTAMPTZ, -- When refund was completed/failed
-    
-    -- Constraints
-    CONSTRAINT refunds_amount_not_exceed_transaction CHECK (
-        amount <= (SELECT amount FROM transactions WHERE id = transaction_id)
-    )
+    processed_at TIMESTAMPTZ -- When refund was completed/failed
 );
 
 -- Create indexes for refunds table

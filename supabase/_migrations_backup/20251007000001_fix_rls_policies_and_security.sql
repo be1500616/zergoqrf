@@ -13,6 +13,7 @@ BEGIN;
 -- ============================================================================
 
 -- Fix create_anonymous_session function
+DROP FUNCTION IF EXISTS public.create_anonymous_session(uuid, uuid, integer);
 CREATE OR REPLACE FUNCTION public.create_anonymous_session(
   p_restaurant_id UUID,
   p_table_id UUID DEFAULT NULL,
@@ -59,6 +60,7 @@ END;
 $$;
 
 -- Fix validate_anonymous_session function
+DROP FUNCTION IF EXISTS public.validate_anonymous_session(text);
 CREATE OR REPLACE FUNCTION public.validate_anonymous_session(p_session_token TEXT)
 RETURNS TABLE (
   is_valid BOOLEAN,
@@ -83,6 +85,7 @@ END;
 $$;
 
 -- Fix handle_auth_user_updated function
+DROP FUNCTION IF EXISTS public.handle_auth_user_updated();
 CREATE OR REPLACE FUNCTION public.handle_auth_user_updated()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -102,6 +105,7 @@ END;
 $$;
 
 -- Fix refresh_user_claims function
+DROP FUNCTION IF EXISTS public.refresh_user_claims(uuid);
 CREATE OR REPLACE FUNCTION public.refresh_user_claims(user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -139,6 +143,7 @@ END;
 $$;
 
 -- Fix get_user_restaurant_id function
+DROP FUNCTION IF EXISTS public.get_user_restaurant_id(uuid);
 CREATE OR REPLACE FUNCTION public.get_user_restaurant_id(user_id UUID)
 RETURNS UUID
 LANGUAGE plpgsql
@@ -159,6 +164,7 @@ END;
 $$;
 
 -- Fix user_has_role function
+DROP FUNCTION IF EXISTS public.user_has_role(uuid, text);
 CREATE OR REPLACE FUNCTION public.user_has_role(user_id UUID, required_role TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -179,6 +185,7 @@ END;
 $$;
 
 -- Fix user_has_permission function
+DROP FUNCTION IF EXISTS public.user_has_permission(uuid, text);
 CREATE OR REPLACE FUNCTION public.user_has_permission(user_id UUID, required_permission TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -243,6 +250,7 @@ CREATE INDEX IF NOT EXISTS idx_customers_user_id ON customers(user_id);
 -- ============================================================================
 
 -- Create optimized function to get current user's restaurant ID
+DROP FUNCTION IF EXISTS auth.get_current_user_restaurant_id();
 CREATE OR REPLACE FUNCTION auth.get_current_user_restaurant_id()
 RETURNS UUID
 LANGUAGE plpgsql
@@ -271,6 +279,7 @@ END;
 $$;
 
 -- Create optimized function to check user role
+DROP FUNCTION IF EXISTS auth.current_user_has_role(text);
 CREATE OR REPLACE FUNCTION auth.current_user_has_role(required_role TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -299,6 +308,7 @@ END;
 $$;
 
 -- Create optimized function to check user permissions
+DROP FUNCTION IF EXISTS auth.current_user_has_permission(text);
 CREATE OR REPLACE FUNCTION auth.current_user_has_permission(required_permission TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql

@@ -267,12 +267,11 @@ BEGIN
             ELSE expires_at -- Don't extend authenticated sessions automatically
         END,
         updated_at = NOW()
-    WHERE session_token = p_session_token 
-    AND expires_at > NOW() 
+    WHERE session_token = p_session_token
+    AND expires_at > NOW()
     AND is_active = true;
-    
-    GET DIAGNOSTICS session_found = FOUND;
-    RETURN session_found;
+
+    RETURN FOUND;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

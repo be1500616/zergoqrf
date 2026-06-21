@@ -347,6 +347,32 @@ class SupabaseOrderRepository(IOrderRepository):
             )
             raise
 
+    async def get_orders_by_status(
+        self,
+        restaurant_id: UUID,
+        status: str,
+        limit: int = 50,
+    ) -> List[Order]:
+        """Get orders by restaurant and a single status."""
+        try:
+            response = await (
+                self._client.table("orders")
+                .select("*, order_items(*), payment_collections(*)")
+                .eq("restaurant_id", str(restaurant_id))
+                .eq("order_status", status)
+                .order("placed_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            return [self._map_to_order_entity(r) for r in response.data]
+        except Exception as e:
+            logger.error(
+                "Get orders by status failed",
+                extra={"restaurant_id": str(restaurant_id), "status": status, "error": str(e)},
+                exc_info=True,
+            )
+            raise
+
     async def get_orders_by_table(
         self,
         table_id: UUID,

@@ -132,6 +132,19 @@ class IOrderRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_orders_by_status(
+        self,
+        restaurant_id: UUID,
+        status: str,
+        limit: int = 50,
+    ) -> List[Order]:
+        """Get orders by restaurant and a single status.
+
+        Convenience method used by the kitchen display use case.
+        """
+        pass
+
+    @abstractmethod
     async def get_orders_by_table(
         self,
         table_id: UUID,

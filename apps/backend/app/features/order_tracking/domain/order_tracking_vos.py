@@ -211,11 +211,39 @@ class OrderTimeline:
         if self.last_updated < self.created_at:
             raise ValueError("Last updated time cannot be before creation time")
     
+    @classmethod
+    def from_partial(
+        cls,
+        order_id: UUID,
+        events: List[Dict[str, Any]],
+        created_at: datetime,
+        last_updated: datetime,
+    ) -> "OrderTimeline":
+        """Build a timeline that may be empty (e.g. freshly-created order)."""
+        if not events:
+            # Synthesize one event so invariants pass; it represents order creation.
+            events = [{
+                "id": None,
+                "event_type": "order_created",
+                "title": "Order created",
+                "description": "Order placed",
+                "metadata": {},
+                "created_at": created_at.isoformat(),
+            }]
+        if last_updated < created_at:
+            last_updated = created_at
+        return cls(
+            order_id=order_id,
+            events=events,
+            created_at=created_at,
+            last_updated=last_updated,
+        )
+
     @property
     def total_events(self) -> int:
         """Get total number of timeline events."""
         return len(self.events)
-    
+
     @property
     def latest_event(self) -> Dict[str, Any]:
         """Get the most recent timeline event."""
@@ -281,11 +309,44 @@ class KitchenWorkflowStatus:
     def __post_init__(self):
         """Validate kitchen workflow status constraints."""
         total_accounted = self.items_pending + self.items_preparing + self.items_ready + self.items_served
-        if total_accounted != self.total_items:
-            raise ValueError("Item counts do not match total items")
-        
+        if self.total_items and total_accounted != self.total_items:
+            raise ValueError(
+                f"Item counts do not match total items "
+                f"(total={self.total_items}, accounted={total_accounted})"
+            )
+
         if not 0.0 <= self.overall_progress <= 1.0:
             raise ValueError("Overall progress must be between 0.0 and 1.0")
+
+    @classmethod
+    def from_item_counts(
+        cls,
+        order_id: UUID,
+        items_pending: int,
+        items_preparing: int,
+        items_ready: int,
+        items_served: int = 0,
+    ) -> "KitchenWorkflowStatus":
+        """Build a kitchen workflow from item counts (no full aggregation needed)."""
+        from .order_tracking_enums import KitchenDisplayPriority
+
+        total = items_pending + items_preparing + items_ready + items_served
+        if total == 0:
+            progress = 0.0
+        else:
+            progress = (items_ready + items_served) / total
+        return cls(
+            order_id=order_id,
+            total_items=total,
+            items_pending=items_pending,
+            items_preparing=items_preparing,
+            items_ready=items_ready,
+            items_served=items_served,
+            overall_progress=progress,
+            estimated_completion=None,
+            assigned_staff=[],
+            priority=KitchenDisplayPriority.NORMAL,
+        )
     
     @property
     def is_complete(self) -> bool:

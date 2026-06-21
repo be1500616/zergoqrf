@@ -39,47 +39,167 @@ from ..domain.order_tracking_exceptions import (
 # Import authentication dependencies
 from ...auth.presentation.supabase_dependencies import get_current_user, require_staff
 
+# Concrete repo impls
+from ...orders.infrastructure.order_repos_impl import SupabaseOrderRepository
+from ..infrastructure.order_tracking_repos_impl import (
+    NoopRealtimeEventRepository,
+    SupabaseNotificationHistoryRepository,
+    SupabaseOrderItemTrackingRepository,
+    SupabaseOrderStatusHistoryRepository,
+    SupabaseOrderTimelineRepository,
+)
+from ..domain.order_tracking_repos import IRealtimeEventRepository
+
+from fastapi import Request
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/order-tracking", tags=["Order Tracking"])
 
 
-# Dependency injection functions - simplified for now
+# ── No-op notification services ──────────────────────────────────────────────
+# Real email/WhatsApp/SMS integrations are not in scope right now. Returning
+# True keeps the use case pipeline intact; the notification_history row is
+# persisted either way.
+
+class _NoopEmailService(IEmailNotificationService):
+    async def send_email(self, **_):  # type: ignore[override]
+        return True
+
+
+class _NoopWhatsAppService(IWhatsAppNotificationService):
+    async def send_message(self, **_):  # type: ignore[override]
+        return True
+
+
+class _NoopSMSService(ISMSNotificationService):
+    async def send_sms(self, **_):  # type: ignore[override]
+        return True
+
+
+# ── DI providers ─────────────────────────────────────────────────────────────
+
+async def _supabase(request: Request):
+    return request.app.state.supabase_service
+
+
+async def _order_repo():
+    client = await _supabase()
+    return SupabaseOrderRepository(client)
+
+
+async def _status_history_repo():
+    return SupabaseOrderStatusHistoryRepository(await _supabase())
+
+
+async def _item_tracking_repo():
+    return SupabaseOrderItemTrackingRepository(await _supabase())
+
+
+async def _timeline_repo():
+    return SupabaseOrderTimelineRepository(await _supabase())
+
+
+async def _notification_repo():
+    return SupabaseNotificationHistoryRepository(await _supabase())
+
+
+def _realtime_repo() -> IRealtimeEventRepository:
+    return NoopRealtimeEventRepository()
+
+
 def get_order_tracking_use_case() -> GetOrderTrackingUseCase:
-    """Get order tracking use case instance - placeholder implementation."""
-    # This would be properly implemented with actual repository dependencies
-    # For now, return a mock to prevent import errors
-    return None
+    raise RuntimeError("async provider — use get_order_tracking_use_case_dep")
 
 
 def get_order_tracking_by_number_use_case() -> GetOrderTrackingByNumberUseCase:
-    """Get order tracking by number use case instance - placeholder implementation."""
-    return None
+    raise RuntimeError("async provider — use get_order_tracking_by_number_use_case_dep")
 
 
 def get_kitchen_orders_use_case() -> GetKitchenOrdersUseCase:
-    """Get kitchen orders use case instance - placeholder implementation."""
-    return None
+    raise RuntimeError("async provider — use get_kitchen_orders_use_case_dep")
 
 
 def get_update_order_status_use_case() -> UpdateOrderStatusUseCase:
-    """Get update order status use case instance - placeholder implementation."""
-    return None
+    raise RuntimeError("async provider — use get_update_order_status_use_case_dep")
 
 
 def get_bulk_update_order_status_use_case() -> BulkUpdateOrderStatusUseCase:
-    """Get bulk update order status use case instance - placeholder implementation."""
-    return None
+    raise RuntimeError("async provider — use get_bulk_update_order_status_use_case_dep")
 
 
 def get_send_notification_use_case() -> SendNotificationUseCase:
-    """Get send notification use case instance - placeholder implementation."""
-    return None
+    raise RuntimeError("async provider — use get_send_notification_use_case_dep")
 
 
 def get_retry_failed_notifications_use_case() -> RetryFailedNotificationsUseCase:
-    """Get retry failed notifications use case instance - placeholder implementation."""
-    return None
+    raise RuntimeError("async provider — use get_retry_failed_notifications_use_case_dep")
+
+
+# Async providers used by FastAPI Depends
+
+async def get_order_tracking_use_case_dep() -> GetOrderTrackingUseCase:
+    client = await _supabase()
+    return GetOrderTrackingUseCase(
+        order_repository=SupabaseOrderRepository(client),
+        status_history_repository=SupabaseOrderStatusHistoryRepository(client),
+        item_tracking_repository=SupabaseOrderItemTrackingRepository(client),
+        timeline_repository=SupabaseOrderTimelineRepository(client),
+        notification_repository=SupabaseNotificationHistoryRepository(client),
+    )
+
+
+async def get_order_tracking_by_number_use_case_dep() -> GetOrderTrackingByNumberUseCase:
+    client = await _supabase()
+    return GetOrderTrackingByNumberUseCase(
+        order_repository=SupabaseOrderRepository(client),
+        get_order_tracking_use_case=await get_order_tracking_use_case_dep(),
+    )
+
+
+async def get_kitchen_orders_use_case_dep() -> GetKitchenOrdersUseCase:
+    client = await _supabase()
+    return GetKitchenOrdersUseCase(
+        order_repository=SupabaseOrderRepository(client),
+        status_history_repository=SupabaseOrderStatusHistoryRepository(client),
+        item_tracking_repository=SupabaseOrderItemTrackingRepository(client),
+    )
+
+
+async def get_update_order_status_use_case_dep() -> UpdateOrderStatusUseCase:
+    client = await _supabase()
+    return UpdateOrderStatusUseCase(
+        order_repository=SupabaseOrderRepository(client),
+        status_history_repository=SupabaseOrderStatusHistoryRepository(client),
+        realtime_repository=NoopRealtimeEventRepository(),
+        timeline_repository=SupabaseOrderTimelineRepository(client),
+    )
+
+
+async def get_bulk_update_order_status_use_case_dep() -> BulkUpdateOrderStatusUseCase:
+    return BulkUpdateOrderStatusUseCase(
+        update_order_status_use_case=await get_update_order_status_use_case_dep(),
+    )
+
+
+async def get_send_notification_use_case_dep() -> SendNotificationUseCase:
+    client = await _supabase()
+    return SendNotificationUseCase(
+        order_repository=SupabaseOrderRepository(client),
+        notification_repository=SupabaseNotificationHistoryRepository(client),
+        realtime_repository=NoopRealtimeEventRepository(),
+        email_service=_NoopEmailService(),
+        whatsapp_service=_NoopWhatsAppService(),
+        sms_service=_NoopSMSService(),
+    )
+
+
+async def get_retry_failed_notifications_use_case_dep() -> RetryFailedNotificationsUseCase:
+    client = await _supabase()
+    return RetryFailedNotificationsUseCase(
+        notification_repository=SupabaseNotificationHistoryRepository(client),
+        send_notification_use_case=await get_send_notification_use_case_dep(),
+    )
 
 
 @router.get(
@@ -92,7 +212,7 @@ async def get_order_tracking(
     order_id: UUID = Path(..., description="Order ID"),
     include_notifications: bool = Query(True, description="Include notification history"),
     current_user = Depends(get_current_user),
-    get_tracking_use_case: GetOrderTrackingUseCase = Depends(get_order_tracking_use_case),
+    get_tracking_use_case: GetOrderTrackingUseCase = Depends(get_order_tracking_use_case_dep),
 ):
     """Get comprehensive order tracking information.
     
@@ -142,7 +262,7 @@ async def get_order_tracking_by_number(
     order_number: str = Path(..., description="Order number"),
     include_notifications: bool = Query(True, description="Include notification history"),
     current_user = Depends(get_current_user),
-    get_tracking_by_number_use_case: GetOrderTrackingByNumberUseCase = Depends(get_order_tracking_by_number_use_case),
+    get_tracking_by_number_use_case: GetOrderTrackingByNumberUseCase = Depends(get_order_tracking_by_number_use_case_dep),
 ):
     """Get order tracking information by order number.
     
@@ -189,7 +309,7 @@ async def update_order_status(
     order_id: UUID = Path(..., description="Order ID"),
     request: UpdateOrderStatusRequest = ...,
     current_user = Depends(require_staff),
-    update_status_use_case: UpdateOrderStatusUseCase = Depends(get_update_order_status_use_case),
+    update_status_use_case: UpdateOrderStatusUseCase = Depends(get_update_order_status_use_case_dep),
 ):
     """Update order status with comprehensive tracking.
     
@@ -250,7 +370,7 @@ async def update_order_status(
 async def bulk_update_order_status(
     request: BulkUpdateOrderStatusRequest = ...,
     current_user = Depends(require_staff),
-    bulk_update_use_case: BulkUpdateOrderStatusUseCase = Depends(get_bulk_update_order_status_use_case),
+    bulk_update_use_case: BulkUpdateOrderStatusUseCase = Depends(get_bulk_update_order_status_use_case_dep),
 ):
     """Bulk update order status for kitchen efficiency.
     
@@ -358,7 +478,7 @@ async def send_order_notification(
     order_id: UUID = Path(..., description="Order ID"),
     request: SendNotificationRequest = ...,
     current_user = Depends(require_staff),
-    send_notification_use_case: SendNotificationUseCase = Depends(get_send_notification_use_case),
+    send_notification_use_case: SendNotificationUseCase = Depends(get_send_notification_use_case_dep),
 ):
     """Send order notification through multiple channels.
     
@@ -420,7 +540,7 @@ async def get_kitchen_orders(
     active_only: bool = Query(True, description="Only include active orders"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of orders"),
     current_user = Depends(require_staff),
-    get_kitchen_orders_use_case: GetKitchenOrdersUseCase = Depends(get_kitchen_orders_use_case),
+    get_kitchen_orders_use_case: GetKitchenOrdersUseCase = Depends(get_kitchen_orders_use_case_dep),
 ):
     """Get orders for kitchen display.
     
@@ -540,7 +660,7 @@ async def get_notification_metrics(
 async def retry_failed_notifications(
     max_retries: int = Query(3, ge=1, le=5, description="Maximum retry attempts"),
     current_user = Depends(require_staff),
-    retry_notifications_use_case: RetryFailedNotificationsUseCase = Depends(get_retry_failed_notifications_use_case),
+    retry_notifications_use_case: RetryFailedNotificationsUseCase = Depends(get_retry_failed_notifications_use_case_dep),
 ):
     """Retry failed notifications.
     

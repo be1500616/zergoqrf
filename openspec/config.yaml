@@ -1,0 +1,36 @@
+schema: spec-driven
+context: |
+  Project: ZERGO QR
+  Purpose: Production-ready restaurant management system with QR-based ordering and streamlined onboarding.
+
+  Tech stack:
+  - Backend: FastAPI (Python 3.12+), uv/pip, ruff, mypy, pytest
+  - Frontend: Flutter (iOS/Android/Web), GetX, GoRouter, flutter_dotenv, flutter test
+  - Data/Auth: Supabase PostgreSQL with RLS and Edge Functions
+  - Infra: Docker/Docker Compose, GitHub Actions
+
+  Conventions:
+  - Vertical slice architecture (domain/application/infrastructure/presentation per feature)
+  - Strong multi-tenant isolation via Supabase RLS
+  - Conventional commits: feat, fix, docs, chore, test, refactor
+  - Branch naming: feature/scope-description
+  - Backend uses type hints and PEP 8 aligned style
+
+  Domain areas:
+  - Restaurant onboarding
+  - QR generation and tracking for tables
+  - Menu management (categories/items/pricing)
+  - End-to-end order flow from QR scan to staff tracking
+
+  Constraints:
+  - Multi-tenancy and tenant isolation are critical
+  - Initial scale target: 5-10 concurrent users with growth headroom
+
+rules:
+  proposal:
+    - Include explicit affected capabilities and impacted app areas (backend/frontend/infra).
+    - Call out multi-tenant and RLS impact for any auth/data-related change.
+    - Include non-goals for scope control on large requests.
+  tasks:
+    - Sequence tasks by vertical slice layers (domain -> application -> infrastructure -> presentation).
+    - Include verification tasks for tests and strict validation before marking complete.
